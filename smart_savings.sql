@@ -50,7 +50,8 @@ CREATE TABLE savings_accounts (
     opened_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Ngày mở sổ
     status ENUM('ACTIVE', 'CLOSED') DEFAULT 'ACTIVE', -- Sổ đang hoạt động hay đã tất toán
     
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (product_id) REFERENCES savings_products(product_id)
 );
 
 -- ==========================================

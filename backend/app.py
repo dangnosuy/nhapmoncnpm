@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from common.auth import auth_bp
-from transactions import transactions_bp
+from staff.staff import transactions_bp
 from admin.admin import admin_bp
 
 app = Flask(__name__)
