@@ -45,8 +45,8 @@ CREATE TABLE savings_products (
 CREATE TABLE savings_accounts (
     account_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL, -- Cuốn sổ này của ai?
-    product_id INT NOT NULL, -- Thuộc loại kỳ hạn nào (1 tháng, 3 tháng...)?
-    principal_balance DECIMAL(15, 2) NOT NULL, -- Số tiền gốc gửi vào
+    product_id INT NOT NULL, -- Thuộc loại kỳ hạn nào?
+    principal_balance DECIMAL(15, 2) NOT NULL CHECK (principal_balance >= 0), -- Gốc, chặn số âm
     opened_at DATETIME DEFAULT CURRENT_TIMESTAMP, -- Ngày mở sổ
     status ENUM('ACTIVE', 'CLOSED') DEFAULT 'ACTIVE', -- Sổ đang hoạt động hay đã tất toán
     
@@ -55,20 +55,24 @@ CREATE TABLE savings_accounts (
 );
 
 -- ==========================================
--- 5. BẢNG LỊCH SỬ GIAO DỊCH (Sổ Cái)
+-- 5. BẢNG LỊCH SỬ GIAO DỊCH (Sổ Cái - Maker/Checker)
 -- ==========================================
 CREATE TABLE transactions (
     transaction_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL, -- Ai tạo phiếu này?
-    account_id INT NULL, -- Liên quan đến sổ tiết kiệm nào? (Có thể NULL nếu chỉ nạp tiền vào ví)
-    amount DECIMAL(15, 2) NOT NULL, -- Số tiền giao dịch
+    account_id INT NULL, -- Sổ nào? (NULL nếu sổ chưa được duyệt tạo)
+    target_product_id INT NULL, -- Gói tiết kiệm nhắm tới (Dùng khi chờ Staff duyệt)
+    amount DECIMAL(15, 2) NOT NULL CHECK (amount > 0), -- Số tiền GD, chặn số âm
     
     transaction_type ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS', 'CLOSE_SAVINGS') NOT NULL,
-    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING', -- Chờ Staff duyệt
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING', -- Trạng thái duyệt
     
-    processed_by INT NULL, -- Staff nào duyệt phiếu này?
+    processed_by INT NULL, -- Staff nào duyệt?
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
 
+    -- Khóa ngoại kết nối chặt chẽ dữ liệu
     FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (account_id) REFERENCES savings_accounts(account_id),
+    FOREIGN KEY (target_product_id) REFERENCES savings_products(product_id),
     FOREIGN KEY (processed_by) REFERENCES users(user_id)
 );
