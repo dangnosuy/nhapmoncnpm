@@ -2,8 +2,17 @@ from flask import Blueprint, request, jsonify
 from werkzeug.security import generate_password_hash
 from common.db import db_cursor, db_conn
 from common.requireRole import require_role
+import random
 
 admin_bp = Blueprint('admin', __name__)
+
+
+def _generate_unique_account_number(cursor):
+    while True:
+        account_number = ''.join(random.choices('0123456789', k=10))
+        cursor.execute("SELECT user_id FROM users WHERE account_number = %s", (account_number,))
+        if not cursor.fetchone():
+            return account_number
 
 
 # ============================================================
@@ -201,16 +210,18 @@ def create_user():
         return jsonify({'message': 'Role không hợp lệ! Chỉ chấp nhận: CUSTOMER, STAFF, ADMIN'}), 400
 
     hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
+    account_number = _generate_unique_account_number(db_cursor)
 
     try:
-        sql = """INSERT INTO users (email, password_hash, full_name, identity_card, role)
-                 VALUES (%s, %s, %s, %s, %s)"""
-        db_cursor.execute(sql, (email, hashed_password, full_name, identity_card, role))
+        sql = """INSERT INTO users (email, password_hash, full_name, identity_card, role, account_number)
+                 VALUES (%s, %s, %s, %s, %s, %s)"""
+        db_cursor.execute(sql, (email, hashed_password, full_name, identity_card, role, account_number))
         db_conn.commit()
 
         return jsonify({
             'message': f'Tạo tài khoản {role} thành công!',
-            'user_id': db_cursor.lastrowid
+            'user_id': db_cursor.lastrowid,
+            'account_number': account_number
         }), 201
     except Exception as e:
         db_conn.rollback()

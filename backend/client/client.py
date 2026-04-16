@@ -1,17 +1,13 @@
 from flask import Blueprint, request, jsonify
 import mysql.connector
 from common.requireRole import require_role
+from common.db import DB_CONFIG
 
 client_bp = Blueprint("client", __name__)
 
 
 def get_db():
-    conn = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="root",  # đổi lại nếu mật khẩu MySQL của bạn khác
-        database="modern_savings_db"
-    )
+    conn = mysql.connector.connect(**DB_CONFIG)
     cursor = conn.cursor()
     return conn, cursor
 
@@ -23,7 +19,7 @@ def _get_current_user_id():
 def _fetch_customer_basic(cursor, user_id):
     cursor.execute(
         """
-        SELECT user_id, email, full_name, identity_card, wallet_balance, status, created_at
+        SELECT user_id, email, full_name, identity_card, account_number, wallet_balance, status, created_at
         FROM users
         WHERE user_id = %s AND role = 'CUSTOMER'
         """,
@@ -49,9 +45,10 @@ def get_my_profile():
                 "email": row[1],
                 "full_name": row[2],
                 "identity_card": row[3],
-                "wallet_balance": float(row[4]),
-                "status": row[5],
-                "created_at": str(row[6])
+                "account_number": row[4],
+                "wallet_balance": float(row[5]),
+                "status": row[6],
+                "created_at": str(row[7])
             }
         }), 200
     except Exception as e:
@@ -133,9 +130,10 @@ def get_client_dashboard():
                 "email": user[1],
                 "full_name": user[2],
                 "identity_card": user[3],
-                "wallet_balance": float(user[4]),
-                "status": user[5],
-                "created_at": str(user[6]),
+                "account_number": user[4],
+                "wallet_balance": float(user[5]),
+                "status": user[6],
+                "created_at": str(user[7]),
                 "active_savings_accounts": int(total_accounts or 0),
                 "total_savings_principal": float(total_savings or 0),
                 "pending_transactions": int(pending_transactions or 0),
@@ -365,7 +363,7 @@ def create_withdraw_request():
     conn, cursor = get_db()
     try:
         cursor.execute(
-            "SELECT wallet_balance FROM users WHERE user_id = %s",
+            "SELECT wallet_balance, account_number FROM users WHERE user_id = %s",
             (user_id,)
         )
         user = cursor.fetchone()
@@ -389,6 +387,93 @@ def create_withdraw_request():
             "transaction_id": cursor.lastrowid,
             "amount": amount,
             "status": "PENDING"
+        }), 201
+    except Exception as e:
+        conn.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({"message": "Lỗi server!", "error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@client_bp.route("/api/client/transfers", methods=["POST"])
+@require_role(["CUSTOMER"])
+def transfer_to_account_number():
+    user_id = _get_current_user_id()
+    data = request.get_json() or {}
+    to_account_number = str(data.get("to_account_number", "")).strip()
+    amount = data.get("amount")
+
+    if not to_account_number:
+        return jsonify({"message": "Vui lòng nhập số tài khoản nhận."}), 400
+
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return jsonify({"message": "Số tiền chuyển phải lớn hơn 0!"}), 400
+    except (TypeError, ValueError):
+        return jsonify({"message": "Số tiền không hợp lệ!"}), 400
+
+    conn, cursor = get_db()
+    try:
+        cursor.execute(
+            "SELECT user_id, wallet_balance, full_name, account_number FROM users WHERE user_id = %s AND role = 'CUSTOMER'",
+            (user_id,)
+        )
+        sender = cursor.fetchone()
+        if not sender:
+            return jsonify({"message": "Không tìm thấy tài khoản nguồn!"}), 404
+
+        sender_id, sender_wallet, sender_name, sender_account_number = sender
+        if to_account_number == str(sender_account_number):
+            return jsonify({"message": "Không thể tự chuyển khoản cho chính mình!"}), 400
+
+        cursor.execute(
+            "SELECT user_id, full_name, account_number FROM users WHERE account_number = %s AND role = 'CUSTOMER'",
+            (to_account_number,)
+        )
+        receiver = cursor.fetchone()
+        if not receiver:
+            return jsonify({"message": "Không tìm thấy tài khoản nhận!"}), 404
+
+        receiver_id, receiver_name, receiver_account_number = receiver
+
+        if float(sender_wallet) < amount:
+            return jsonify({"message": "Số dư ví không đủ để chuyển khoản!"}), 400
+
+        cursor.execute("UPDATE users SET wallet_balance = wallet_balance - %s WHERE user_id = %s", (amount, sender_id))
+        cursor.execute("UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s", (amount, receiver_id))
+
+        cursor.execute(
+            """
+            INSERT INTO transactions (user_id, amount, transaction_type, status)
+            VALUES (%s, %s, 'WITHDRAW_FROM_WALLET', 'APPROVED')
+            """,
+            (sender_id, amount)
+        )
+        sender_txn_id = cursor.lastrowid
+
+        cursor.execute(
+            """
+            INSERT INTO transactions (user_id, amount, transaction_type, status)
+            VALUES (%s, %s, 'DEPOSIT_TO_WALLET', 'APPROVED')
+            """,
+            (receiver_id, amount)
+        )
+        receiver_txn_id = cursor.lastrowid
+
+        conn.commit()
+        return jsonify({
+            "message": "Chuyển khoản thành công!",
+            "from_account_number": str(sender_account_number),
+            "to_account_number": str(receiver_account_number),
+            "from_name": sender_name,
+            "to_name": receiver_name,
+            "amount": amount,
+            "sender_transaction_id": sender_txn_id,
+            "receiver_transaction_id": receiver_txn_id
         }), 201
     except Exception as e:
         conn.rollback()
