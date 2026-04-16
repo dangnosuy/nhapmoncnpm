@@ -20,6 +20,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     identity_card VARCHAR(20) UNIQUE, -- CMND/CCCD
+    account_number VARCHAR(20) UNIQUE, -- Số tài khoản ngân hàng duy nhất
     role ENUM('CUSTOMER', 'STAFF', 'ADMIN') DEFAULT 'CUSTOMER',
     wallet_balance DECIMAL(15, 2) DEFAULT 0.00, -- "Tiền nhàn rỗi" trong ví app
     status ENUM('ACTIVE', 'LOCKED') DEFAULT 'ACTIVE',
