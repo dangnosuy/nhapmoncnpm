@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UIT Banking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    :root {
+      --gold-1: #efe6c7;
+      --gold-2: #d9bb72;
+      --gold-3: #a47b26;
+      --gold-4: #8f6b21;
+      --bg: #f4f1e7;
+      --card: #ffffff;
+      --soft: #faf7ef;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --blue: #1d4ed8;
+      --danger: #dc2626;
+      --success: #059669;
+      --warning: #d97706;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --radius-xl: 32px;
+      --radius-lg: 24px;
+      --radius-md: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; border: none; }
+    a { color: inherit; text-decoration: none; }
+
+    .hidden { display: none !important; }
+    .app-shell { min-height: 100vh; }
+
+    .login-page {
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--gold-1) 0%, var(--gold-2) 45%, var(--gold-3) 100%);
+      position: relative;
+      overflow: hidden;
+      color: white;
+    }
+
+    .floating-bg::before,
+    .floating-bg::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(40px);
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .floating-bg::before {
+      width: 320px; height: 320px; left: -80px; top: -80px; background: white;
+    }
+
+    .floating-bg::after {
+      width: 280px; height: 280px; right: -60px; top: 120px; background: #fde68a;
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 48px;
+      align-items: center;
+      padding: 32px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      position: relative;
+      width: 42px;
+      height: 42px;
+    }
+
+    .brand-icon span {
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      background: #ef4444;
+      border-radius: 4px;
+    }
+
+    .brand-icon span:nth-child(1) { left: 3px; top: 3px; transform: rotate(12deg); }
+    .brand-icon span:nth-child(2) { right: 3px; top: 3px; transform: rotate(-12deg); }
+    .brand-icon span:nth-child(3) { left: 3px; bottom: 3px; transform: rotate(-12deg); }
+    .brand-icon span:nth-child(4) { right: 3px; bottom: 3px; transform: rotate(12deg); }
+
+    .brand-text {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: #1d4ed8;
+    }
+
+    .login-left h1 {
+      margin: 28px 0 12px;
+      font-size: 54px;
+      line-height: 1.08;
+      font-weight: 700;
+    }
+
+    .login-left p {
+      font-size: 18px;
+      color: rgba(255,255,255,0.85);
+      max-width: 620px;
+      line-height: 1.7;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 28px;
+      max-width: 640px;
+    }
+
+    .feature-item {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 22px;
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .feature-item small { color: rgba(255,255,255,0.72); display: block; margin-bottom: 6px; }
+    .feature-item strong { font-size: 16px; }
+
+    .login-card {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(20px);
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+    }
+
+    .login-card-main { padding: 32px; }
+
+    .login-avatar {
+      width: 112px;
+      height: 112px;
+      margin: 0 auto 24px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #f4dd90, #c89f35);
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+      font-size: 42px;
+    }
+
+    .login-title-sub { color: rgba(255,255,255,0.8); font-size: 18px; }
+    .login-title-main { margin-top: 8px; font-size: 46px; font-weight: 300; line-height: 1.1; }
+
+    .form-group { margin-top: 18px; }
+    .form-group label { display: block; margin-bottom: 10px; font-size: 14px; color: rgba(255,255,255,0.82); }
+
+    .form-control {
+      width: 100%;
+      height: 52px;
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      padding: 0 16px;
+      outline: none;
+    }
+
+    .form-control::placeholder { color: rgba(255,255,255,0.5); }
+
+    .login-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.86);
+    }
+
+    .login-btn {
+      width: 100%;
+      height: 56px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.35);
+      color: white;
+      font-size: 24px;
+      font-weight: 800;
+      margin-top: 18px;
+      transition: 0.2s ease;
+    }
+
+    .login-btn:hover { background: rgba(255,255,255,0.45); }
+    .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .login-error {
+      margin-top: 14px;
+      background: rgba(220, 38, 38, 0.2);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 14px;
+    }
+
+    .login-card-footer {
+      border-top: 1px solid rgba(255,255,255,0.14);
+      background: rgba(0,0,0,0.06);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 20px 24px;
+    }
+
+    .footer-action {
+      text-align: center;
+      border-radius: 18px;
+      padding: 14px 10px;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.86);
+      font-size: 13px;
+      opacity: 0.75;
+    }
+
+    .footer-action i { display: block; margin-bottom: 8px; font-size: 18px; }
+
+    .dashboard-page { min-height: 100vh; }
+    .dashboard-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 24px;
+    }
+
+    .sidebar-card,
+    .content-card,
+    .soft-card,
+    .promo-card,
+    .tile-card,
+    .info-card,
+    .transaction-card,
+    .profile-card {
+      border-radius: var(--radius-xl);
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar-card {
+      position: sticky;
+      top: 24px;
+      overflow: hidden;
+      color: #1f2937;
+      background: linear-gradient(135deg, var(--gold-1) 0%, #ddc487 45%, #bd9640 100%);
+    }
+
+    .sidebar-inner { padding: 24px; }
+    .sidebar-profile {
+      margin-top: 28px;
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.28);
+      border-radius: 28px;
+      padding: 24px;
+      backdrop-filter: blur(12px);
+    }
+
+    .sidebar-profile-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .sidebar-greeting { font-size: 30px; line-height: 1.15; font-weight: 300; }
+    .sidebar-email { color: #4b5563; margin-top: 10px; font-size: 14px; }
+
+    .sidebar-nav { margin-top: 24px; display: grid; gap: 10px; }
+    .sidebar-nav button {
+      width: 100%;
+      text-align: left;
+      border-radius: 18px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.22);
+      color: #1f2937;
+      font-weight: 600;
+    }
+
+    .sidebar-nav button.active { background: rgba(255,255,255,0.5); }
+
+    .logout-btn {
+      width: 100%;
+      height: 48px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.22);
+      color: #1f2937;
+      font-weight: 700;
+      margin-top: 18px;
+    }
+
+    .hero {
+      background: linear-gradient(90deg, var(--gold-1), #e8d29a, #d5b25a);
+      border-radius: 32px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .hero-icons { display: flex; gap: 10px; }
+    .circle-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.5);
+      color: #334155;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 16px;
+    }
+
+    .hero-balance,
+    .hero-profile {
+      background: rgba(255,255,255,0.22);
+      border: 1px solid rgba(255,255,255,0.35);
+      backdrop-filter: blur(10px);
+      border-radius: 28px;
+      padding: 22px;
+    }
+
+    .hero-balance h3,
+    .hero-profile h3 { margin: 0; font-size: 20px; color: #475569; font-weight: 600; }
+    .balance-value { margin-top: 14px; font-size: 46px; font-weight: 700; letter-spacing: -0.03em; }
+
+    .mini-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.65);
+      padding: 10px 16px;
+      margin-top: 18px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #475569;
+    }
+
+    .hero-eye {
+      float: right;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.6);
+      color: #475569;
+    }
+
+    .hero-profile-name { font-size: 28px; font-weight: 700; margin-top: 12px; }
+    .hero-profile-sub { margin-top: 8px; color: #6b7280; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .stat-box {
+      background: rgba(255,255,255,0.58);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .stat-box small { color: #6b7280; display: block; }
+    .stat-box strong { display: block; margin-top: 6px; font-size: 16px; }
+
+    .content-grid { display: grid; gap: 24px; }
+
+    .section-card {
+      background: white;
+      border-radius: 32px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .section-head h2 { margin: 0; font-size: 30px; }
+    .section-head p { margin: 6px 0 0; color: var(--muted); }
+
+    .outline-btn {
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .quick-grid,
+    .service-grid,
+    .profile-grid,
+    .products-grid,
+    .accounts-grid,
+    .promo-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .service-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .profile-grid,
+    .products-grid,
+    .accounts-grid,
+    .promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+    .quick-tile,
+    .service-tile,
+    .account-tile,
+    .product-tile,
+    .profile-tile {
+      background: var(--soft);
+      border-radius: 26px;
+      padding: 18px;
+    }
+
+    .quick-tile {
+      position: relative;
+      text-align: center;
+      transition: 0.18s ease;
+      border: 1px solid #f1f5f9;
+    }
+
+    .quick-tile:hover,
+    .service-tile:hover { transform: translateY(-3px); }
+
+    .quick-badge {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: white;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .tile-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: white;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 14px;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+      color: var(--gold-4);
+      font-size: 26px;
+    }
+
+    .quick-tile strong,
+    .service-tile strong { display: block; font-size: 18px; line-height: 1.35; }
+    .quick-tile small { display: block; margin-top: 6px; color: var(--muted); }
+
+    .promo-card {
+      color: white;
+      padding: 24px;
+      border-radius: 32px;
+      min-height: 220px;
+    }
+
+    .promo-card.blue { background: linear-gradient(135deg, #2563eb, #4338ca); }
+    .promo-card.purple { background: linear-gradient(135deg, #d946ef, #7c3aed); }
+
+    .promo-card small { color: rgba(255,255,255,0.76); }
+    .promo-card h3 { margin: 14px 0 0; font-size: 38px; line-height: 1.15; }
+    .promo-card p { margin: 14px 0 0; color: rgba(255,255,255,0.84); }
+    .promo-card button {
+      margin-top: 20px;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 16px;
+      background: white;
+      color: #1f2937;
+      font-weight: 700;
+    }
+
+    .account-tile,
+    .product-tile,
+    .profile-tile { border: 1px solid #f3efe3; }
+    .account-head,
+    .product-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .account-title,
+    .product-title { font-size: 22px; font-weight: 700; }
+    .account-sub,
+    .product-sub { margin-top: 6px; color: var(--muted); font-size: 14px; }
+    .account-amount { margin-top: 18px; font-size: 34px; font-weight: 800; }
+
+    .chip-list { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .chip {
+      background: white;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #475569;
+    }
+
+    .product-id {
+      min-width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      background: white;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      color: var(--gold-4);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .empty-box {
+      border: 1px dashed #cbd5e1;
+      background: var(--soft);
+      color: var(--muted);
+      border-radius: 28px;
+      padding: 26px;
+      grid-column: 1 / -1;
+    }
+
+    .transaction-list { display: grid; gap: 12px; }
+    .transaction-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--soft);
+      border-radius: 24px;
+      padding: 16px;
+    }
+
+    .transaction-title { font-weight: 700; }
+    .transaction-sub { margin-top: 4px; color: var(--muted); font-size: 14px; }
+    .transaction-time { margin-top: 4px; color: #94a3b8; font-size: 12px; }
+    .transaction-right { text-align: right; }
+    .transaction-amount { font-weight: 700; }
+    .tx-status { margin-top: 4px; font-size: 12px; font-weight: 800; }
+    .status-approved { color: var(--success); }
+    .status-rejected { color: var(--danger); }
+    .status-pending { color: var(--warning); }
+
+    .bottom-nav {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 14px;
+      background: rgba(107, 114, 128, 0.86);
+      backdrop-filter: blur(16px);
+      border-radius: 28px;
+      padding: 12px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.16);
+      display: none;
+      z-index: 20;
+    }
+
+    .bottom-nav-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .bottom-btn {
+      text-align: center;
+      color: rgba(255,255,255,0.8);
+      background: transparent;
+      padding: 4px;
+    }
+
+    .bottom-btn-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 6px;
+      font-size: 20px;
+    }
+
+    .bottom-btn.active .bottom-btn-icon {
+      background: linear-gradient(135deg, #fce7f3, #cffafe);
+      color: #1f2937;
+    }
+
+    .bottom-btn.active { color: white; font-weight: 700; }
+    .bottom-btn small { font-size: 11px; }
+
+    .loading-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: white;
+      border-radius: 28px;
+      padding: 18px;
+      color: var(--muted);
+      box-shadow: var(--shadow);
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #64748b;
+      animation: spin 1s linear infinite;
+    }
+
+    .mobile-top { display: none; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1100px) {
+      .login-container,
+      .dashboard-wrap,
+      .hero-grid,
+      .quick-grid,
+      .service-grid,
+      .profile-grid,
+      .products-grid,
+      .accounts-grid,
+      .promo-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .login-left { display: none; }
+      .login-container { padding: 20px; display: flex; }
+      .dashboard-wrap { grid-template-columns: 1fr; }
+      .sidebar-card { display: none; }
+      .bottom-nav { display: block; }
+      .mobile-top { display: flex; }
+      .section-head h2 { font-size: 26px; }
+      .balance-value { font-size: 38px; }
+      .promo-card h3 { font-size: 30px; }
+    }
+
+    @media (max-width: 640px) {
+      .login-card-main { padding: 24px; }
+      .login-title-main { font-size: 38px; }
+      .login-card-footer { padding: 16px; gap: 8px; }
+      .footer-action { font-size: 12px; padding: 12px 8px; }
+      .dashboard-wrap { padding: 16px; }
+      .hero, .section-card { padding: 18px; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .hero-top { margin-bottom: 14px; }
+      .hero-icons { gap: 8px; }
+      .circle-icon { width: 42px; height: 42px; }
+      .section-head h2 { font-size: 24px; }
+      .account-title, .product-title { font-size: 20px; }
+      .account-amount { font-size: 28px; }
+      .transaction-item { align-items: flex-start; flex-direction: column; }
+      .transaction-right { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section id="loginPage" class="login-page floating-bg">
+      <div class="login-container">
+        <div class="login-left">
+          <div class="brand">
+            <div class="brand-icon">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="brand-text">UIT Bank</div>
+          </div>
+          <h1>Ngân hàng số UIT.</h1>
+          <p>
+            Giá trị tích lũy niềm tin
+          </p>
+          <div class="feature-grid">
+            <div class="feature-item"><small>Ưu điểm</small><strong>Văn minh</strong></div>
+            <div class="feature-item"><small>Ưu điểm</small><strong>Hiện đại</strong></div>
+            <div class="feature-item"><small>Ưu điểm</small><strong>Nhanh chóng</strong></div>
+          </div>
+        </div>
+
+        <div class="login-card">
+          <div class="login-card-main">
+            <div class="mobile-top" style="justify-content: space-between; align-items: center; margin-bottom: 18px;">
+              <div class="brand">
+                <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
+                <div class="brand-text">UIT Bank</div>
+              </div>
+              <div style="display:flex; gap:10px;">
+                <div class="circle-icon"><i class="fa-regular fa-bell"></i></div>
+                <div class="circle-icon"><i class="fa-solid fa-bars"></i></div>
+              </div>
+            </div>
+
+            <div class="login-avatar"><i class="fa-solid fa-qrcode"></i></div>
+            <div class="login-title-sub">Xin chào,</div>
+            <div class="login-title-main">Quý khách</div>
+
+            <div class="form-group">
+              <label for="loginUsername">Tên đăng nhập</label>
+              <input id="loginUsername" class="form-control" type="text" placeholder="Nhập email đăng nhập" />
+            </div>
+
+            <div class="form-group">
+              <label for="loginPassword">Mật khẩu</label>
+              <input id="loginPassword" class="form-control" type="password" placeholder="Nhập mật khẩu" />
+            </div>
+
+            <div class="login-row">
+              <button id="showRegisterBtn" type="button" style="background:none;color:inherit;">Đăng ký tài khoản</button>
+              <button type="button" style="background:none;color:inherit;">Quên mật khẩu?</button>
+            </div>
+
+            <div id="registerForm" class="hidden">
+              <div class="form-group">
+                <label for="registerFullName">Họ và tên</label>
+                <input id="registerFullName" class="form-control" type="text" placeholder="Nhập họ và tên" />
+              </div>
+
+              <div class="form-group">
+                <label for="registerIdentityCard">CMND/CCCD</label>
+                <input id="registerIdentityCard" class="form-control" type="text" placeholder="Nhập số CMND/CCCD" />
+              </div>
+
+              <button id="registerBtn" class="login-btn" type="button" style="margin-top:16px; background: rgba(255,255,255,0.22); font-size: 20px;">Tạo tài khoản</button>
+            </div>
+
+            <div id="loginError" class="login-error hidden"></div>
+
+            <button id="loginBtn" class="login-btn" type="button">Đăng nhập</button>
+          </div>
+
+          <div class="login-card-footer">
+            <div class="footer-action"><i class="fa-solid fa-qrcode"></i>Quét QR</div>
+            <div class="footer-action"><i class="fa-solid fa-shield-halved"></i>Xác thực D-OTP</div>
+            <div class="footer-action"><i class="fa-regular fa-star"></i>Thay ảnh nền</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="dashboardPage" class="dashboard-page hidden">
+      <div class="dashboard-wrap">
+        <aside class="sidebar-card">
+          <div class="sidebar-inner">
+            <div class="brand">
+              <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
+              <div class="brand-text">UIT Bank</div>
+            </div>
+
+            <div class="sidebar-profile">
+              <div class="sidebar-profile-head">
+                <i class="fa-solid fa-shield-halved"></i>
+                <div class="circle-icon" style="width:40px;height:40px;background:rgba(255,255,255,0.3);"><i class="fa-solid fa-qrcode"></i></div>
+              </div>
+
+              <div class="sidebar-greeting">Xin chào,<br><span id="sidebarName">Quý khách</span></div>
+              <div class="sidebar-email" id="sidebarEmail">Khách hàng cá nhân</div>
+
+              <div class="sidebar-nav">
+                <button class="nav-btn active" data-page="home">Trang chủ</button>
+                <button class="nav-btn" data-page="savings">Tiết kiệm của tôi</button>
+                <button class="nav-btn" data-page="transactions">Lịch sử giao dịch</button>
+                <button class="nav-btn" data-page="profile">Thông tin cá nhân</button>
+              </div>
+
+              <button id="logoutBtn" class="logout-btn" type="button">Đăng xuất</button>
+            </div>
+          </div>
+        </aside>
+
+        <main class="content-grid">
+          <section class="hero">
+            <div class="hero-top">
+              <div class="brand">
+                <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
+                <div class="brand-text">UIT Bank</div>
+              </div>
+              <div class="hero-icons">
+                <div class="circle-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                <div class="circle-icon"><i class="fa-regular fa-bell"></i></div>
+                <div class="circle-icon mobile-top"><i class="fa-solid fa-bars"></i></div>
+              </div>
+            </div>
+
+            <div class="hero-grid">
+              <div class="hero-balance">
+                <button id="toggleMoneyBtn" class="hero-eye" type="button"><i class="fa-regular fa-eye"></i></button>
+                <h3>Tổng số dư VND</h3>
+                <div id="totalBalance" class="balance-value">*** *** VND</div>
+                <div class="mini-chip">SINH LỜI MỖI NGÀY <i class="fa-solid fa-chevron-right"></i></div>
+              </div>
+
+              <div class="hero-profile">
+                <h3>Tài khoản bảo mật</h3>
+                <div id="heroName" class="hero-profile-name">Quý khách</div>
+                <div id="heroStatus" class="hero-profile-sub">Khách hàng cá nhân · ACTIVE</div>
+                <div class="stats-grid">
+                  <div class="stat-box">
+                    <small>Ví khả dụng</small>
+                    <strong id="walletBalance">0 đ</strong>
+                  </div>
+                  <div class="stat-box">
+                    <small>Sổ đang mở</small>
+                    <strong id="activeAccountsCount">0 sổ</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div id="loadingBar" class="loading-bar hidden">
+            <div class="spinner"></div>
+            <span>Đang đồng bộ dữ liệu từ server...</span>
+          </div>
+
+          <div id="page-home" class="page-panel">
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Tiện ích tài khoản</h2>
+                  <p>Chỉ giữ lại các chức năng đang có API backend</p>
+                </div>
+              </div>
+              <div class="quick-grid" id="quickGrid"></div>
+            </section>
+
+            
+
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Tiết kiệm của tôi</h2>
+                  <p>Theo dõi sổ tiết kiệm và hiệu suất sinh lời</p>
+                </div>
+                <button class="outline-btn" data-go-page="savings">Xem tất cả</button>
+              </div>
+              <div class="accounts-grid" id="homeAccountsGrid"></div>
+            </section>
+
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Lịch sử giao dịch</h2>
+                  <p>Theo dõi các giao dịch gần nhất</p>
+                </div>
+                <button class="outline-btn" data-go-page="transactions">Xem tất cả</button>
+              </div>
+              <div class="transaction-list" id="homeTransactionsList"></div>
+            </section>
+
+            
+          </div>
+
+          <div id="page-savings" class="page-panel hidden">
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Tiết kiệm của tôi</h2>
+                  <p>Danh sách sổ tiết kiệm của khách hàng</p>
+                </div>
+                <button class="outline-btn refresh-btn">Làm mới</button>
+              </div>
+              <div class="accounts-grid" id="accountsGrid"></div>
+            </section>
+
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Gói tiết kiệm đang hoạt động</h2>
+                  <p id="productsCountText">0 gói</p>
+                </div>
+              </div>
+              <div class="products-grid" id="productsGrid"></div>
+            </section>
+
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Yêu cầu mở sổ tiết kiệm</h2>
+                  <p>Tạo yêu cầu mở sổ bằng API client</p>
+                </div>
+              </div>
+              <div class="profile-grid" style="margin-bottom:16px;">
+                <div class="profile-tile">
+                  <div style="color:var(--muted);font-size:14px; margin-bottom:8px;">Chọn gói tiết kiệm</div>
+                  <select id="openSavingsProduct" class="form-control" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;"></select>
+                </div>
+                <div class="profile-tile">
+                  <div style="color:var(--muted);font-size:14px; margin-bottom:8px;">Số tiền gửi</div>
+                  <input id="openSavingsAmount" class="form-control" type="number" placeholder="Nhập số tiền" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
+                </div>
+              </div>
+              <button id="openSavingsBtn" class="login-btn" type="button" style="max-width:280px;height:50px;background:linear-gradient(135deg, var(--gold-2), var(--gold-3)); font-size:18px;">Mở sổ tiết kiệm</button>
+            </section>
+          </div>
+
+          <div id="page-transactions" class="page-panel hidden">
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Lịch sử giao dịch</h2>
+                  <p>Theo dõi toàn bộ giao dịch của tài khoản</p>
+                </div>
+                <div id="transactionsCountText" style="color:var(--muted);font-size:14px;">0 giao dịch</div>
+              </div>
+              <div class="transaction-list" id="transactionsList"></div>
+            </section>
+          </div>
+
+          <div id="page-profile" class="page-panel hidden">
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Thông tin cá nhân</h2>
+                  <p>Thông tin lấy trực tiếp từ backend khách hàng</p>
+                </div>
+                <button class="outline-btn refresh-btn">Làm mới</button>
+              </div>
+              <div class="profile-grid" id="profileGrid"></div>
+            </section>
+          </div>
+        </main>
+      </div>
+
+      <nav class="bottom-nav">
+        <div class="bottom-nav-grid">
+          <button class="bottom-btn active" data-page="home">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-house"></i></div>
+            <small>Trang chủ</small>
+          </button>
+          <button class="bottom-btn" data-page="savings">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+            <small>Sổ</small>
+          </button>
+          <button class="bottom-btn">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-qrcode"></i></div>
+            <small>QR</small>
+          </button>
+          <button class="bottom-btn" data-page="transactions">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-wallet"></i></div>
+            <small>LSGD</small>
+          </button>
+          <button class="bottom-btn" data-page="profile">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-user"></i></div>
+            <small>Hồ sơ</small>
+          </button>
+        </div>
+      </nav>
+    </section>
+  </div>
+
+  <script>
+    const API_BASE_URL = "http://127.0.0.1:5000";
+
+    const appState = {
+      token: localStorage.getItem("client_token") || "",
+      username: localStorage.getItem("client_username") || "",
+      showMoney: false,
+      currentPage: "home",
+      me: null,
+      dashboard: null,
+      products: [],
+      accounts: [],
+      transactions: []
+    };
+
+    const quickItems = [
+      { icon: "fa-solid fa-money-bill-transfer", label: "Nộp tiền", description: "Tạo yêu cầu nạp tiền", action: "deposit" },
+      { icon: "fa-solid fa-money-bill-wave", label: "Rút tiền", description: "Tạo yêu cầu rút tiền", action: "withdraw" },
+      { icon: "fa-solid fa-piggy-bank", label: "Mở sổ tiết kiệm", description: "Tạo yêu cầu mở sổ", page: "savings" },
+      { icon: "fa-solid fa-rotate", label: "Làm mới dữ liệu", description: "Đồng bộ từ server", action: "refresh" }
+    ];
+
+    const serviceItems = [];
+
+    const el = {
+      loginPage: document.getElementById("loginPage"),
+      dashboardPage: document.getElementById("dashboardPage"),
+      loginUsername: document.getElementById("loginUsername"),
+      loginPassword: document.getElementById("loginPassword"),
+      loginBtn: document.getElementById("loginBtn"),
+      showRegisterBtn: document.getElementById("showRegisterBtn"),
+      registerForm: document.getElementById("registerForm"),
+      registerFullName: document.getElementById("registerFullName"),
+      registerIdentityCard: document.getElementById("registerIdentityCard"),
+      registerBtn: document.getElementById("registerBtn"),
+      loginError: document.getElementById("loginError"),
+      logoutBtn: document.getElementById("logoutBtn"),
+      loadingBar: document.getElementById("loadingBar"),
+      sidebarName: document.getElementById("sidebarName"),
+      sidebarEmail: document.getElementById("sidebarEmail"),
+      heroName: document.getElementById("heroName"),
+      heroStatus: document.getElementById("heroStatus"),
+      totalBalance: document.getElementById("totalBalance"),
+      walletBalance: document.getElementById("walletBalance"),
+      activeAccountsCount: document.getElementById("activeAccountsCount"),
+      toggleMoneyBtn: document.getElementById("toggleMoneyBtn"),
+      quickGrid: document.getElementById("quickGrid"),
+      serviceGrid: document.getElementById("serviceGrid"),
+      openSavingsProduct: document.getElementById("openSavingsProduct"),
+      openSavingsAmount: document.getElementById("openSavingsAmount"),
+      openSavingsBtn: document.getElementById("openSavingsBtn"),
+      homeAccountsGrid: document.getElementById("homeAccountsGrid"),
+      accountsGrid: document.getElementById("accountsGrid"),
+      productsGrid: document.getElementById("productsGrid"),
+      transactionsList: document.getElementById("transactionsList"),
+      homeTransactionsList: document.getElementById("homeTransactionsList"),
+      profileGrid: document.getElementById("profileGrid"),
+      productsCountText: document.getElementById("productsCountText"),
+      transactionsCountText: document.getElementById("transactionsCountText")
+    };
+
+    function money(n) {
+      return new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0
+      }).format(Number(n || 0));
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function formatTransactionType(type) {
+      const map = {
+        DEPOSIT_TO_WALLET: "Nạp tiền vào ví",
+        WITHDRAW_FROM_WALLET: "Rút tiền từ ví",
+        OPEN_SAVINGS: "Mở sổ tiết kiệm",
+        CLOSE_SAVINGS: "Tất toán sổ"
+      };
+      return map[type] || type || "Giao dịch";
+    }
+
+    async function apiRequest(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      headers.set("Content-Type", "application/json");
+      if (appState.token) {
+        headers.set("Authorization", `Bearer ${appState.token}`);
+      }
+
+      const response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers
+      });
+
+      const raw = await response.text();
+      const data = raw ? JSON.parse(raw) : {};
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Có lỗi xảy ra từ máy chủ.");
+      }
+
+      return data;
+    }
+
+    function setLoading(isLoading) {
+      el.loadingBar.classList.toggle("hidden", !isLoading);
+    }
+
+    function setLoginError(message) {
+      if (!message) {
+        el.loginError.classList.add("hidden");
+        el.loginError.textContent = "";
+        return;
+      }
+      el.loginError.textContent = message;
+      el.loginError.classList.remove("hidden");
+    }
+
+    function updateAuthView() {
+      const loggedIn = !!appState.token;
+      el.loginPage.classList.toggle("hidden", loggedIn);
+      el.dashboardPage.classList.toggle("hidden", !loggedIn);
+      if (!loggedIn) {
+        el.loginUsername.value = appState.username || "";
+        el.loginPassword.value = "";
+      }
+    }
+
+    function renderQuickGrid() {
+      el.quickGrid.innerHTML = quickItems.map((item) => `
+        <button class="quick-tile" data-action="${item.action || ""}" data-page="${item.page || ""}">
+          ${item.badge ? `<span class="quick-badge">${appState.products.length} GÓI</span>` : ""}
+          <div class="tile-icon"><i class="${item.icon}"></i></div>
+          <strong>${escapeHtml(item.label)}</strong>
+          <small>${escapeHtml(item.description || "")}</small>
+        </button>
+      `).join("");
+
+      el.quickGrid.querySelectorAll(".quick-tile").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const page = btn.dataset.page;
+          const action = btn.dataset.action;
+          if (page) switchPage(page);
+          if (action === "refresh") await fetchAllClientData();
+          if (action === "deposit") await handleDepositRequest();
+          if (action === "withdraw") await handleWithdrawRequest();
+        });
+      });
+    }
+
+    function renderServices() {}
+
+    function renderAccounts(target, accounts) {
+      if (!accounts.length) {
+        target.innerHTML = `<div class="empty-box">Bạn chưa có sổ tiết kiệm nào. Khi backend có API mở sổ trên UI, mình sẽ nối tiếp ngay.</div>`;
+        return;
+      }
+
+      target.innerHTML = accounts.map((item) => `
+        <div class="account-tile">
+          <div class="account-head">
+            <div>
+              <div class="account-title">${escapeHtml(item.product_name)}</div>
+              <div class="account-sub">Mã sổ #${escapeHtml(item.account_id)} · ${escapeHtml(item.status)}</div>
+            </div>
+            <div class="tile-icon" style="margin:0;width:52px;height:52px;"><i class="fa-solid fa-piggy-bank"></i></div>
+          </div>
+          <div class="account-amount">${money(item.principal_balance)}</div>
+          <div class="chip-list">
+            <span class="chip">Lãi suất ${escapeHtml(item.interest_rate)}%/năm</span>
+            <span class="chip">Kỳ hạn ${escapeHtml(item.term_months)} tháng</span>
+            <span class="chip">Mở ngày ${escapeHtml(item.opened_at)}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderProducts() {
+      el.openSavingsProduct.innerHTML = appState.products.length
+        ? appState.products.map((item) => `<option value="${item.product_id}">${escapeHtml(item.name)} · ${escapeHtml(item.interest_rate)}%/năm · ${escapeHtml(item.term_months)} tháng</option>`).join("")
+        : `<option value="">Chưa có gói tiết kiệm</option>`;
+
+      el.productsCountText.textContent = `${appState.products.length} gói`;
+      if (!appState.products.length) {
+        el.productsGrid.innerHTML = `<div class="empty-box">Chưa có gói tiết kiệm nào.</div>`;
+        return;
+      }
+
+      el.productsGrid.innerHTML = appState.products.map((item) => `
+        <div class="product-tile">
+          <div class="product-head">
+            <div>
+              <div class="product-title">${escapeHtml(item.name)}</div>
+              <div class="product-sub">Giữ tối thiểu ${escapeHtml(item.min_days_hold)} ngày</div>
+            </div>
+            <div class="product-id">#${escapeHtml(item.product_id)}</div>
+          </div>
+          <div class="chip-list">
+            <span class="chip">${escapeHtml(item.term_months)} tháng</span>
+            <span class="chip">${escapeHtml(item.interest_rate)}%/năm</span>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderTransactions(target, list) {
+      if (!list.length) {
+        target.innerHTML = `<div class="empty-box">Chưa có giao dịch nào để hiển thị.</div>`;
+        return;
+      }
+
+      target.innerHTML = list.map((tx) => {
+        const statusClass = tx.status === "APPROVED"
+          ? "status-approved"
+          : tx.status === "REJECTED"
+            ? "status-rejected"
+            : "status-pending";
+
+        return `
+          <div class="transaction-item">
+            <div>
+              <div class="transaction-title">${escapeHtml(formatTransactionType(tx.transaction_type))}</div>
+              <div class="transaction-sub">#${escapeHtml(tx.transaction_id)}${tx.product_name ? ` · ${escapeHtml(tx.product_name)}` : ""}${tx.account_id ? ` · Sổ ${escapeHtml(tx.account_id)}` : ""}</div>
+              <div class="transaction-time">${escapeHtml(tx.created_at || "")}</div>
+            </div>
+            <div class="transaction-right">
+              <div class="transaction-amount">${money(tx.amount)}</div>
+              <div class="tx-status ${statusClass}">${escapeHtml(tx.status)}</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderProfile() {
+      const me = appState.me || {};
+      const items = [
+        { label: "Họ và tên", value: me.full_name || "-" },
+        { label: "Email", value: me.email || "-" },
+        { label: "CCCD/CMND", value: me.identity_card || "-" },
+        { label: "Trạng thái", value: me.status || "-" },
+        { label: "Ngày tạo", value: me.created_at || "-" },
+        { label: "Số dư ví", value: money(me.wallet_balance || 0) }
+      ];
+
+      el.profileGrid.innerHTML = items.map((item) => `
+        <div class="profile-tile">
+          <div style="color:var(--muted);font-size:14px;">${escapeHtml(item.label)}</div>
+          <div style="margin-top:8px;font-size:22px;font-weight:700;word-break:break-word;">${escapeHtml(item.value)}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderSummary() {
+      const me = appState.me || {};
+      const dashboard = appState.dashboard || {};
+      const displayName = me.full_name || dashboard.full_name || "Quý khách";
+      const email = me.email || dashboard.email || "Khách hàng cá nhân";
+      const totalBalance = Number(dashboard.wallet_balance || 0) + Number(dashboard.total_savings_principal || 0);
+
+      el.sidebarName.textContent = displayName;
+      el.sidebarEmail.textContent = email;
+      el.heroName.textContent = displayName;
+      el.heroStatus.textContent = `Khách hàng cá nhân · ${me.status || dashboard.status || "ACTIVE"}`;
+      el.walletBalance.textContent = money(dashboard.wallet_balance || 0);
+      el.activeAccountsCount.textContent = `${dashboard.active_savings_accounts || 0} sổ`;
+      el.totalBalance.textContent = appState.showMoney ? money(totalBalance) : "*** *** VND";
+    }
+
+    function renderAll() {
+      renderSummary();
+      renderQuickGrid();
+      renderServices();
+      renderAccounts(el.homeAccountsGrid, appState.accounts.slice(0, 2));
+      renderAccounts(el.accountsGrid, appState.accounts);
+      renderProducts();
+      renderTransactions(el.homeTransactionsList, appState.transactions.slice(0, 4));
+      renderTransactions(el.transactionsList, appState.transactions);
+      renderProfile();
+      el.transactionsCountText.textContent = `${appState.transactions.length} giao dịch`;
+      updateAuthView();
+      switchPage(appState.currentPage, false);
+    }
+
+    function switchPage(page, rerenderNav = true) {
+      appState.currentPage = page;
+      document.querySelectorAll(".page-panel").forEach((panel) => panel.classList.add("hidden"));
+      const target = document.getElementById(`page-${page}`);
+      if (target) target.classList.remove("hidden");
+
+      if (rerenderNav) {
+        document.querySelectorAll(".nav-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.page === page);
+        });
+        document.querySelectorAll(".bottom-btn[data-page]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const page = btn.dataset.page;
+          if (page === "home" && btn.textContent.includes("Nộp")) {
+            await handleDepositRequest();
+            return;
+          }
+          switchPage(page);
+        });
+      });
+      }
+    }
+
+    async function fetchAllClientData() {
+      if (!appState.token) return;
+      setLoading(true);
+      try {
+        const [meRes, dashboardRes, productsRes, accountsRes, transactionsRes] = await Promise.all([
+          apiRequest("/api/client/me"),
+          apiRequest("/api/client/dashboard"),
+          apiRequest("/api/client/savings-products"),
+          apiRequest("/api/client/savings-accounts"),
+          apiRequest("/api/client/transactions")
+        ]);
+
+        appState.me = meRes.user || null;
+        appState.dashboard = dashboardRes.data || null;
+        appState.products = productsRes.products || [];
+        appState.accounts = accountsRes.accounts || [];
+        appState.transactions = transactionsRes.transactions || [];
+        renderAll();
+      } catch (error) {
+        console.error(error);
+        alert(error.message || "Không thể tải dữ liệu từ server.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function handleRegister() {
+      const email = el.loginUsername.value.trim();
+      const password = el.loginPassword.value;
+      const fullName = el.registerFullName.value.trim();
+      const identityCard = el.registerIdentityCard.value.trim();
+      setLoginError("");
+
+      if (!email || !password || !fullName || !identityCard) {
+        setLoginError("Vui lòng nhập đầy đủ email, mật khẩu, họ tên và CMND/CCCD để đăng ký.");
+        return;
+      }
+
+      try {
+        el.registerBtn.disabled = true;
+        el.registerBtn.textContent = "Đang tạo tài khoản";
+
+        await apiRequest("/api/register", {
+          method: "POST",
+          body: JSON.stringify({
+            email,
+            password,
+            full_name: fullName,
+            identity_card: identityCard,
+            role: "CUSTOMER"
+          })
+        });
+
+        setLoginError("Đăng ký thành công. Bạn có thể đăng nhập ngay.");
+        el.registerForm.classList.add("hidden");
+      } catch (error) {
+        setLoginError(error.message || "Đăng ký thất bại.");
+      } finally {
+        el.registerBtn.disabled = false;
+        el.registerBtn.textContent = "Tạo tài khoản";
+      }
+    }
+
+    async function handleDepositRequest() {
+      const value = prompt("Nhập số tiền muốn nộp vào tài khoản:", "1000000");
+      if (value === null) return;
+      const amount = Number(value);
+      if (!amount || amount <= 0) {
+        alert("Số tiền nộp không hợp lệ.");
+        return;
+      }
+
+      try {
+        await apiRequest("/api/client/deposit-requests", {
+          method: "POST",
+          body: JSON.stringify({ amount })
+        });
+        alert("Đã tạo yêu cầu nạp tiền thành công.");
+        await fetchAllClientData();
+        switchPage("transactions");
+      } catch (error) {
+        alert(error.message || "Không thể tạo yêu cầu nạp tiền.");
+      }
+    }
+
+    async function handleWithdrawRequest() {
+      const value = prompt("Nhập số tiền muốn rút khỏi tài khoản:", "500000");
+      if (value === null) return;
+      const amount = Number(value);
+      if (!amount || amount <= 0) {
+        alert("Số tiền rút không hợp lệ.");
+        return;
+      }
+
+      try {
+        await apiRequest("/api/client/withdraw-requests", {
+          method: "POST",
+          body: JSON.stringify({ amount })
+        });
+        alert("Đã tạo yêu cầu rút tiền thành công.");
+        await fetchAllClientData();
+        switchPage("transactions");
+      } catch (error) {
+        alert(error.message || "Không thể tạo yêu cầu rút tiền.");
+      }
+    }
+
+    async function handleOpenSavingsRequest() {
+      const productId = Number(el.openSavingsProduct.value);
+      const amount = Number(el.openSavingsAmount.value);
+      if (!productId) {
+        alert("Vui lòng chọn gói tiết kiệm.");
+        return;
+      }
+      if (!amount || amount <= 0) {
+        alert("Vui lòng nhập số tiền gửi hợp lệ.");
+        return;
+      }
+
+      try {
+        el.openSavingsBtn.disabled = true;
+        el.openSavingsBtn.textContent = "Đang gửi yêu cầu";
+        await apiRequest("/api/client/open-savings", {
+          method: "POST",
+          body: JSON.stringify({ product_id: productId, amount })
+        });
+        alert("Đã tạo yêu cầu mở sổ tiết kiệm thành công.");
+        el.openSavingsAmount.value = "";
+        await fetchAllClientData();
+      } catch (error) {
+        alert(error.message || "Không thể tạo yêu cầu mở sổ.");
+      } finally {
+        el.openSavingsBtn.disabled = false;
+        el.openSavingsBtn.textContent = "Mở sổ tiết kiệm";
+      }
+    }
+
+    async function handleLogin() {
+      const username = el.loginUsername.value.trim();
+      const password = el.loginPassword.value;
+      setLoginError("");
+
+      if (!username || !password) {
+        setLoginError("Vui lòng nhập tên đăng nhập và mật khẩu.");
+        return;
+      }
+
+      try {
+        el.loginBtn.disabled = true;
+        el.loginBtn.textContent = "Đang đăng nhập";
+
+        const res = await apiRequest("/api/login", {
+          method: "POST",
+          body: JSON.stringify({ email: username, password })
+        });
+
+        const token = res.token || res.access_token;
+        if (!token) throw new Error("Server không trả về token đăng nhập.");
+
+        appState.token = token;
+        appState.username = username;
+        localStorage.setItem("client_token", token);
+        localStorage.setItem("client_username", username);
+
+        updateAuthView();
+        await fetchAllClientData();
+      } catch (error) {
+        setLoginError(error.message || "Đăng nhập thất bại.");
+      } finally {
+        el.loginBtn.disabled = false;
+        el.loginBtn.textContent = "Đăng nhập";
+      }
+    }
+
+    function handleLogout() {
+      localStorage.removeItem("client_token");
+      appState.token = "";
+      appState.me = null;
+      appState.dashboard = null;
+      appState.products = [];
+      appState.accounts = [];
+      appState.transactions = [];
+      appState.currentPage = "home";
+      updateAuthView();
+    }
+
+    function bindEvents() {
+      el.loginUsername.value = appState.username || "";
+      el.loginBtn.addEventListener("click", handleLogin);
+      el.showRegisterBtn.addEventListener("click", () => {
+        el.registerForm.classList.toggle("hidden");
+      });
+      el.registerBtn.addEventListener("click", handleRegister);
+      el.loginPassword.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleLogin();
+      });
+      el.logoutBtn.addEventListener("click", handleLogout);
+      el.openSavingsBtn.addEventListener("click", handleOpenSavingsRequest);
+      el.toggleMoneyBtn.addEventListener("click", () => {
+        appState.showMoney = !appState.showMoney;
+        renderSummary();
+      });
+
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.addEventListener("click", () => switchPage(btn.dataset.page));
+      });
+
+      document.querySelectorAll(".bottom-btn[data-page]").forEach((btn) => {
+        btn.addEventListener("click", () => switchPage(btn.dataset.page));
+      });
+
+      document.querySelectorAll("[data-go-page]").forEach((btn) => {
+        btn.addEventListener("click", () => switchPage(btn.dataset.goPage));
+      });
+
+      document.querySelectorAll(".refresh-btn").forEach((btn) => {
+        btn.addEventListener("click", fetchAllClientData);
+      });
+    }
+
+    async function init() {
+      bindEvents();
+      renderServices();
+      updateAuthView();
+      if (appState.token) {
+        try {
+          await fetchAllClientData();
+        } catch (error) {
+          console.error(error);
+          handleLogout();
+        }
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
