@@ -10,19 +10,19 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
-      --gold-1: #efe6c7;
-      --gold-2: #d9bb72;
-      --gold-3: #a47b26;
-      --gold-4: #8f6b21;
-      --bg: #f4f1e7;
+      --gold-1: #e0f2fe;
+      --gold-2: #dbeafe;
+      --gold-3: #bfdbfe;
+      --gold-4: #93c5fd;
+      --bg: #f3f8ff;
       --card: #ffffff;
-      --soft: #faf7ef;
+      --soft: #eff6ff;
       --text: #1f2937;
       --muted: #6b7280;
-      --blue: #1d4ed8;
-      --danger: #dc2626;
-      --success: #059669;
-      --warning: #d97706;
+      --blue: #2563eb;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
       --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
       --radius-xl: 32px;
       --radius-lg: 24px;
@@ -40,10 +40,12 @@
 
     .login-page {
       min-height: 100vh;
-      background: linear-gradient(135deg, var(--gold-1) 0%, var(--gold-2) 45%, var(--gold-3) 100%);
+      background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #a5f3fc 100%);
+      background-size: 180% 180%;
       position: relative;
       overflow: hidden;
-      color: white;
+      color: #0f172a;
+      animation: gradientFlow 14s ease infinite;
     }
 
     .floating-bg::before,
@@ -61,7 +63,7 @@
     }
 
     .floating-bg::after {
-      width: 280px; height: 280px; right: -60px; top: 120px; background: #fde68a;
+      width: 280px; height: 280px; right: -60px; top: 120px; background: #bfdbfe;
     }
 
     .login-container {
@@ -75,6 +77,127 @@
       gap: 48px;
       align-items: center;
       padding: 32px;
+    }
+    .login-page-pattern {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.35;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,0.75) 0 2px, transparent 2px),
+        radial-gradient(circle at 84% 26%, rgba(255,255,255,0.65) 0 2px, transparent 2px),
+        radial-gradient(circle at 28% 78%, rgba(255,255,255,0.5) 0 2px, transparent 2px);
+      background-size: 140px 140px, 180px 180px, 160px 160px;
+      animation: patternDrift 20s ease-in-out infinite;
+    }
+    .login-decor {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .mesh-glow {
+      position: absolute;
+      filter: blur(20px);
+      opacity: 0.55;
+      border-radius: 999px;
+      animation: floatGlow 9s ease-in-out infinite;
+    }
+    .mesh-glow.one {
+      width: 340px;
+      height: 340px;
+      left: -80px;
+      top: 110px;
+      background: radial-gradient(circle, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0) 70%);
+    }
+    .mesh-glow.two {
+      width: 300px;
+      height: 300px;
+      right: 10%;
+      top: -70px;
+      background: radial-gradient(circle, rgba(236,72,153,0.35) 0%, rgba(236,72,153,0) 70%);
+      animation-delay: -2.5s;
+    }
+    .mesh-glow.three {
+      width: 260px;
+      height: 260px;
+      right: -70px;
+      bottom: 60px;
+      background: radial-gradient(circle, rgba(56,189,248,0.36) 0%, rgba(56,189,248,0) 72%);
+      animation-delay: -4.5s;
+    }
+    .ring {
+      position: absolute;
+      border-radius: 999px;
+      border: 1.5px solid rgba(255,255,255,0.65);
+      box-shadow: 0 0 0 6px rgba(255,255,255,0.1) inset;
+    }
+    .ring.one {
+      width: 180px;
+      height: 180px;
+      left: 12%;
+      top: 14%;
+      transform: rotate(10deg);
+    }
+    .ring.two {
+      width: 140px;
+      height: 140px;
+      right: 16%;
+      bottom: 18%;
+      transform: rotate(-14deg);
+    }
+    .sparkles {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 35%, rgba(255,255,255,0.95) 0 1.5px, transparent 1.5px),
+        radial-gradient(circle at 72% 22%, rgba(255,255,255,0.8) 0 1.4px, transparent 1.4px),
+        radial-gradient(circle at 38% 72%, rgba(255,255,255,0.85) 0 1.3px, transparent 1.3px),
+        radial-gradient(circle at 84% 65%, rgba(255,255,255,0.78) 0 1.2px, transparent 1.2px);
+      background-size: 220px 220px, 280px 280px, 260px 260px, 300px 300px;
+      opacity: 0.55;
+      animation: sparkleShift 16s ease-in-out infinite;
+    }
+    .orbs {
+      position: absolute;
+      inset: 0;
+    }
+    .orb {
+      position: absolute;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 74%);
+      opacity: 0;
+      animation: orbFloat linear infinite;
+    }
+    .orb.o1 { width: 10px; height: 10px; left: 14%; bottom: -18px; animation-duration: 14s; animation-delay: -2s; }
+    .orb.o2 { width: 14px; height: 14px; left: 32%; bottom: -28px; animation-duration: 18s; animation-delay: -9s; }
+    .orb.o3 { width: 8px; height: 8px; left: 54%; bottom: -14px; animation-duration: 12s; animation-delay: -5s; }
+    .orb.o4 { width: 12px; height: 12px; left: 74%; bottom: -24px; animation-duration: 16s; animation-delay: -7s; }
+    .orb.o5 { width: 9px; height: 9px; left: 90%; bottom: -20px; animation-duration: 15s; animation-delay: -11s; }
+    }
+    @keyframes floatGlow {
+      0%, 100% { transform: translateY(0px) translateX(0px); }
+      50% { transform: translateY(-12px) translateX(8px); }
+    }
+    @keyframes gradientFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes patternDrift {
+      0%, 100% { transform: translateY(0px); opacity: 0.3; }
+      50% { transform: translateY(-10px); opacity: 0.45; }
+    }
+    @keyframes sparkleShift {
+      0%, 100% { transform: translateY(0px); opacity: 0.45; }
+      50% { transform: translateY(-8px); opacity: 0.7; }
+    }
+    @keyframes orbFloat {
+      0% { transform: translateY(0) scale(0.7); opacity: 0; }
+      10% { opacity: 0.45; }
+      70% { opacity: 0.25; }
+      100% { transform: translateY(-560px) scale(1.2); opacity: 0; }
     }
 
     .brand {
@@ -118,7 +241,7 @@
 
     .login-left p {
       font-size: 18px;
-      color: rgba(255,255,255,0.85);
+      color: rgba(15, 23, 42, 0.78);
       max-width: 620px;
       line-height: 1.7;
     }
@@ -132,26 +255,53 @@
     }
 
     .feature-item {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(255,255,255,0.7);
       border-radius: 22px;
       padding: 18px;
       backdrop-filter: blur(10px);
     }
 
-    .feature-item small { color: rgba(255,255,255,0.72); display: block; margin-bottom: 6px; }
+    .feature-item small { color: rgba(15, 23, 42, 0.62); display: block; margin-bottom: 6px; }
     .feature-item strong { font-size: 16px; }
+    .login-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      max-width: 640px;
+    }
+    .metric-chip {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(255,255,255,0.88);
+      border-radius: 16px;
+      padding: 12px;
+      text-align: center;
+    }
+    .metric-chip strong { display: block; font-size: 18px; color: #0f172a; }
+    .metric-chip small { color: #64748b; font-size: 12px; }
 
     .login-card {
-      background: rgba(255,255,255,0.14);
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid #dbeafe;
       backdrop-filter: blur(20px);
       border-radius: 32px;
       overflow: hidden;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+      box-shadow: 0 18px 40px rgba(30, 64, 175, 0.15);
     }
 
-    .login-card-main { padding: 32px; }
+    .login-card-main { padding: 32px; position: relative; }
+    .login-card-main::after {
+      content: "";
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      right: -70px;
+      bottom: -70px;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0) 70%);
+      pointer-events: none;
+    }
 
     .login-avatar {
       width: 112px;
@@ -160,30 +310,30 @@
       border-radius: 999px;
       display: grid;
       place-items: center;
-      background: linear-gradient(135deg, #f4dd90, #c89f35);
+      background: linear-gradient(135deg, #93c5fd, #38bdf8);
       border: 1px solid rgba(255,255,255,0.3);
       box-shadow: 0 16px 32px rgba(0,0,0,0.12);
       font-size: 42px;
     }
 
-    .login-title-sub { color: rgba(255,255,255,0.8); font-size: 18px; }
-    .login-title-main { margin-top: 8px; font-size: 46px; font-weight: 300; line-height: 1.1; }
+    .login-title-sub { color: #64748b; font-size: 18px; }
+    .login-title-main { margin-top: 8px; font-size: 46px; font-weight: 300; line-height: 1.1; color: #0f172a; }
 
     .form-group { margin-top: 18px; }
-    .form-group label { display: block; margin-bottom: 10px; font-size: 14px; color: rgba(255,255,255,0.82); }
+    .form-group label { display: block; margin-bottom: 10px; font-size: 14px; color: #334155; }
 
     .form-control {
       width: 100%;
       height: 52px;
       border-radius: 18px;
-      border: 1px solid rgba(255,255,255,0.2);
-      background: rgba(255,255,255,0.12);
-      color: white;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
       padding: 0 16px;
       outline: none;
     }
 
-    .form-control::placeholder { color: rgba(255,255,255,0.5); }
+    .form-control::placeholder { color: #94a3b8; }
 
     .login-row {
       display: flex;
@@ -192,7 +342,7 @@
       gap: 12px;
       margin-top: 14px;
       font-size: 14px;
-      color: rgba(255,255,255,0.86);
+      color: #475569;
     }
 
     .text-btn {
@@ -214,7 +364,7 @@
     .auth-mode-hint {
       margin-top: 12px;
       font-size: 13px;
-      color: rgba(255,255,255,0.75);
+      color: #64748b;
       text-align: center;
     }
 
@@ -222,16 +372,32 @@
       width: 100%;
       height: 56px;
       border-radius: 18px;
-      background: rgba(255,255,255,0.35);
-      color: white;
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: #fff;
       font-size: 24px;
       font-weight: 800;
       margin-top: 18px;
       transition: 0.2s ease;
+      position: relative;
+      overflow: hidden;
     }
 
-    .login-btn:hover { background: rgba(255,255,255,0.45); }
+    .login-btn:hover { filter: brightness(1.06); }
     .login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .login-btn:active { transform: translateY(1px); }
+    .login-btn::after {
+      content: "";
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      top: -42px;
+      left: -160px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.22);
+      transform: skewX(-18deg);
+      transition: left .5s ease;
+    }
+    .login-btn:hover::after { left: calc(100% + 20px); }
 
     .login-error {
       margin-top: 14px;
@@ -241,6 +407,30 @@
       padding: 12px 14px;
       font-size: 14px;
     }
+    .login-trust-row {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .trust-pill {
+      border-radius: 14px;
+      border: 1px solid #dbeafe;
+      background: #f8fbff;
+      color: #334155;
+      font-size: 12px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      font-weight: 600;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .trust-pill:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 22px rgba(37,99,235,0.14);
+    }
 
     .login-card-footer {
       border-top: 1px solid rgba(255,255,255,0.14);
@@ -249,6 +439,7 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
       padding: 20px 24px;
+      display: none;
     }
 
     .footer-action {
@@ -265,7 +456,7 @@
 
     .dashboard-page {
       min-height: 100vh;
-      background: #f3f6fb;
+      background: #f3f8ff;
     }
     .dashboard-wrap {
       max-width: 1280px;
@@ -294,7 +485,7 @@
       top: 24px;
       overflow: hidden;
       color: #0f172a;
-      background: linear-gradient(165deg, #dff1ff 0%, #c4e7ff 52%, #a8d9ff 100%);
+      background: linear-gradient(165deg, #e0f2fe 0%, #dbeafe 52%, #bae6fd 100%);
       border: 1px solid #bfdbfe;
     }
 
@@ -371,6 +562,64 @@
       place-items: center;
       background: rgba(255,255,255,0.8);
       color: #0f172a;
+    }
+    .icon-btn {
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .notify-wrap {
+      position: relative;
+    }
+    .notify-badge {
+      position: absolute;
+      top: -4px;
+      right: -2px;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      padding: 0 4px;
+      border: 2px solid #fce7f3;
+    }
+    .notify-panel {
+      position: absolute;
+      right: 0;
+      top: 56px;
+      width: min(360px, calc(100vw - 32px));
+      background: #fff;
+      border: 1px solid #dbe4f0;
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+      z-index: 30;
+      overflow: hidden;
+    }
+    .notify-header {
+      padding: 12px 14px;
+      font-weight: 700;
+      border-bottom: 1px solid #eef2f7;
+      background: #f8fafc;
+    }
+    .notify-list {
+      max-height: 320px;
+      overflow: auto;
+    }
+    .notify-item {
+      padding: 12px 14px;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .notify-item:last-child { border-bottom: none; }
+    .notify-item-title { font-weight: 600; font-size: 14px; }
+    .notify-item-sub { margin-top: 4px; font-size: 12px; color: #64748b; }
+    .notify-empty { padding: 16px; color: #64748b; font-size: 13px; }
+    .primary-action-btn {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9) !important;
+      color: #fff;
     }
 
     .hero-grid {
@@ -472,7 +721,7 @@
       border-radius: 16px;
       background: #f8fafc;
       border: 1px solid #cdd8ea;
-      color: #1e3a8a;
+      color: #6d28d9;
       font-weight: 600;
     }
 
@@ -533,12 +782,12 @@
       width: 64px;
       height: 64px;
       border-radius: 20px;
-      background: #edf2ff;
+      background: #f3e8ff;
       display: grid;
       place-items: center;
       margin: 0 auto 14px;
       box-shadow: none;
-      color: #1e3a8a;
+      color: #6d28d9;
       font-size: 26px;
     }
 
@@ -553,8 +802,8 @@
       min-height: 220px;
     }
 
-    .promo-card.blue { background: linear-gradient(135deg, #2563eb, #4338ca); }
-    .promo-card.purple { background: linear-gradient(135deg, #d946ef, #7c3aed); }
+    .promo-card.blue { background: linear-gradient(135deg, #f472b6, #a78bfa); }
+    .promo-card.purple { background: linear-gradient(135deg, #c084fc, #93c5fd); }
 
     .promo-card small { color: rgba(255,255,255,0.76); }
     .promo-card h3 { margin: 14px 0 0; font-size: 38px; line-height: 1.15; }
@@ -594,11 +843,11 @@
       min-width: 46px;
       height: 46px;
       border-radius: 16px;
-      background: #edf2ff;
+      background: #f3e8ff;
       display: grid;
       place-items: center;
       font-weight: 800;
-      color: #1e3a8a;
+      color: #6d28d9;
       box-shadow: none;
     }
 
@@ -671,7 +920,7 @@
     }
 
     .bottom-btn.active .bottom-btn-icon {
-      background: linear-gradient(135deg, #fce7f3, #cffafe);
+      background: linear-gradient(135deg, #fbcfe8, #bfdbfe);
       color: #1f2937;
     }
 
@@ -763,6 +1012,22 @@
 <body>
   <div class="app-shell">
     <section id="loginPage" class="login-page floating-bg">
+      <div class="login-page-pattern"></div>
+      <div class="login-decor">
+        <div class="mesh-glow one"></div>
+        <div class="mesh-glow two"></div>
+        <div class="mesh-glow three"></div>
+        <div class="ring one"></div>
+        <div class="ring two"></div>
+        <div class="sparkles"></div>
+        <div class="orbs">
+          <span class="orb o1"></span>
+          <span class="orb o2"></span>
+          <span class="orb o3"></span>
+          <span class="orb o4"></span>
+          <span class="orb o5"></span>
+        </div>
+      </div>
       <div class="login-container">
         <div class="login-left">
           <div class="brand">
@@ -779,6 +1044,11 @@
             <div class="feature-item"><small>Ưu điểm</small><strong>Văn minh</strong></div>
             <div class="feature-item"><small>Ưu điểm</small><strong>Hiện đại</strong></div>
             <div class="feature-item"><small>Ưu điểm</small><strong>Nhanh chóng</strong></div>
+          </div>
+          <div class="login-metrics">
+            <div class="metric-chip"><strong>24/7</strong><small>Hỗ trợ trực tuyến</small></div>
+            <div class="metric-chip"><strong>99.9%</strong><small>Ổn định giao dịch</small></div>
+            <div class="metric-chip"><strong>256-bit</strong><small>Mã hóa bảo mật</small></div>
           </div>
         </div>
 
@@ -873,6 +1143,10 @@
 
             <div id="loginError" class="login-error hidden"></div>
             <div id="authModeHint" class="auth-mode-hint">Đăng nhập để quản lý tiết kiệm và giao dịch của bạn.</div>
+            <div class="login-trust-row">
+              <div class="trust-pill"><i class="fa-solid fa-shield-halved"></i>Bảo mật nhiều lớp</div>
+              <div class="trust-pill"><i class="fa-solid fa-bolt"></i>Giao dịch tức thì</div>
+            </div>
 
             <button id="loginBtn" class="login-btn" type="button">Đăng nhập</button>
           </div>
@@ -924,8 +1198,17 @@
                 <div class="brand-text">UIT Bank</div>
               </div>
               <div class="hero-icons">
-                <div class="circle-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-                <div class="circle-icon"><i class="fa-regular fa-bell"></i></div>
+                <div class="notify-wrap">
+                  <button id="notificationBtn" class="circle-icon icon-btn" type="button" title="Thông báo">
+                    <i class="fa-regular fa-bell"></i>
+                  </button>
+                  <span id="notificationBadge" class="notify-badge hidden">0</span>
+                  <div id="notificationPanel" class="notify-panel hidden">
+                    <div class="notify-header">Thông báo giao dịch</div>
+                    <div id="notificationList" class="notify-list"></div>
+                    <div id="notificationEmpty" class="notify-empty">Bạn chưa có thông báo mới.</div>
+                  </div>
+                </div>
                 <div class="circle-icon mobile-top"><i class="fa-solid fa-bars"></i></div>
               </div>
             </div>
@@ -994,7 +1277,7 @@
                   <input id="transferNote" class="form-control" type="text" placeholder="Ví dụ: Chuyen tien" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
                 </div>
               </div>
-              <button id="transferBtn" class="login-btn" type="button" style="max-width:320px;height:50px;background:linear-gradient(135deg, var(--gold-2), var(--gold-3)); font-size:18px;">Chuyển khoản</button>
+              <button id="transferBtn" class="login-btn primary-action-btn" type="button" style="max-width:320px;height:50px; font-size:18px;">Chuyển khoản</button>
               <div class="transfer-helper">Tài khoản của bạn: <strong id="myAccountNumber">-</strong></div>
             </section>
 
@@ -1051,7 +1334,7 @@
               <div class="section-head">
                 <div>
                   <h2>Yêu cầu mở sổ tiết kiệm</h2>
-                  <p>Tạo yêu cầu mở sổ bằng API client</p>
+                  <p>Mở sổ tiết kiệm ngay từ số dư ví khả dụng</p>
                 </div>
               </div>
               <div class="profile-grid" style="margin-bottom:16px;">
@@ -1064,7 +1347,7 @@
                   <input id="openSavingsAmount" class="form-control" type="number" placeholder="Nhập số tiền" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
                 </div>
               </div>
-              <button id="openSavingsBtn" class="login-btn" type="button" style="max-width:280px;height:50px;background:linear-gradient(135deg, var(--gold-2), var(--gold-3)); font-size:18px;">Mở sổ tiết kiệm</button>
+              <button id="openSavingsBtn" class="login-btn primary-action-btn" type="button" style="max-width:280px;height:50px; font-size:18px;">Mở sổ tiết kiệm</button>
             </section>
           </div>
 
@@ -1199,6 +1482,11 @@
       heroStatus: document.getElementById("heroStatus"),
       heroAccountNumber: document.getElementById("heroAccountNumber"),
       totalBalance: document.getElementById("totalBalance"),
+      notificationBtn: document.getElementById("notificationBtn"),
+      notificationBadge: document.getElementById("notificationBadge"),
+      notificationPanel: document.getElementById("notificationPanel"),
+      notificationList: document.getElementById("notificationList"),
+      notificationEmpty: document.getElementById("notificationEmpty"),
       walletBalance: document.getElementById("walletBalance"),
       activeAccountsCount: document.getElementById("activeAccountsCount"),
       toggleMoneyBtn: document.getElementById("toggleMoneyBtn"),
@@ -1402,8 +1690,26 @@
             <span class="chip">Kỳ hạn ${escapeHtml(item.term_months)} tháng</span>
             <span class="chip">Mở ngày ${escapeHtml(item.opened_at)}</span>
           </div>
+          ${item.status === "ACTIVE" ? `
+            <button
+              class="outline-btn close-savings-btn"
+              data-account-id="${escapeHtml(item.account_id)}"
+              style="margin-top:14px; border-color:#fca5a5; color:#b91c1c; background:#fff5f5;"
+              type="button"
+            >
+              Tất toán sổ
+            </button>
+          ` : ""}
         </div>
       `).join("");
+
+      target.querySelectorAll(".close-savings-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const accountId = Number(btn.dataset.accountId);
+          if (!accountId) return;
+          await handleCloseSavingsRequest(accountId);
+        });
+      });
     }
 
     function renderProducts() {
@@ -1502,8 +1808,35 @@
       el.myAccountNumber.textContent = accountNumber;
     }
 
+    function renderNotifications() {
+      const list = (appState.transactions || []).slice(0, 6);
+      const pending = (appState.transactions || []).filter((t) => t.status === "PENDING").length;
+
+      if (pending > 0) {
+        el.notificationBadge.textContent = pending > 99 ? "99+" : String(pending);
+        el.notificationBadge.classList.remove("hidden");
+      } else {
+        el.notificationBadge.classList.add("hidden");
+      }
+
+      if (!list.length) {
+        el.notificationList.innerHTML = "";
+        el.notificationEmpty.classList.remove("hidden");
+        return;
+      }
+
+      el.notificationEmpty.classList.add("hidden");
+      el.notificationList.innerHTML = list.map((tx) => `
+        <div class="notify-item">
+          <div class="notify-item-title">${escapeHtml(formatTransactionType(tx.transaction_type))} · ${escapeHtml(tx.status)}</div>
+          <div class="notify-item-sub">${money(tx.amount)} · ${escapeHtml(tx.created_at || "")}</div>
+        </div>
+      `).join("");
+    }
+
     function renderAll() {
       renderSummary();
+      renderNotifications();
       renderQuickGrid();
       renderServices();
       renderAccounts(el.homeAccountsGrid, appState.accounts.slice(0, 2));
@@ -1761,7 +2094,7 @@
           method: "POST",
           body: JSON.stringify({ product_id: productId, amount })
         });
-        alert("Đã tạo yêu cầu mở sổ tiết kiệm thành công.");
+        alert("Mở sổ tiết kiệm thành công.");
         el.openSavingsAmount.value = "";
         await fetchAllClientData();
       } catch (error) {
@@ -1769,6 +2102,22 @@
       } finally {
         el.openSavingsBtn.disabled = false;
         el.openSavingsBtn.textContent = "Mở sổ tiết kiệm";
+      }
+    }
+
+    async function handleCloseSavingsRequest(accountId) {
+      const confirmed = confirm(`Xác nhận tạo yêu cầu tất toán cho sổ #${accountId}?`);
+      if (!confirmed) return;
+
+      try {
+        await apiRequest(`/api/client/close-savings/${accountId}`, {
+          method: "POST"
+        });
+        alert("Đã tạo yêu cầu tất toán, vui lòng chờ duyệt.");
+        await fetchAllClientData();
+        switchPage("transactions");
+      } catch (error) {
+        alert(error.message || "Không thể tạo yêu cầu tất toán.");
       }
     }
 
@@ -1828,10 +2177,10 @@
         setRegisterMode(true);
       });
       el.cancelRegisterBtn.addEventListener("click", () => setRegisterMode(false));
-      el.forgotPasswordBtn.addEventListener("click", () => setForgotPasswordMode(true));
-      el.cancelForgotPasswordBtn.addEventListener("click", () => setForgotPasswordMode(false));
+      el.forgotPasswordBtn?.addEventListener("click", () => setForgotPasswordMode(true));
+      el.cancelForgotPasswordBtn?.addEventListener("click", () => setForgotPasswordMode(false));
       el.registerBtn.addEventListener("click", handleRegister);
-      el.submitForgotPasswordBtn.addEventListener("click", handleForgotPassword);
+      el.submitForgotPasswordBtn?.addEventListener("click", handleForgotPassword);
       el.loginPassword.addEventListener("keydown", (e) => {
         if (e.key === "Enter") handleLogin();
       });
@@ -1840,7 +2189,7 @@
           if (e.key === "Enter") handleRegister();
         });
       });
-      [el.forgotEmail, el.forgotIdentityCard, el.forgotNewPassword, el.forgotConfirmPassword].forEach((input) => {
+      [el.forgotEmail, el.forgotIdentityCard, el.forgotNewPassword, el.forgotConfirmPassword].filter(Boolean).forEach((input) => {
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") handleForgotPassword();
         });
@@ -1856,6 +2205,16 @@
       el.toggleMoneyBtn.addEventListener("click", () => {
         appState.showMoney = !appState.showMoney;
         renderSummary();
+      });
+
+      el.notificationBtn?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        el.notificationPanel.classList.toggle("hidden");
+      });
+      document.addEventListener("click", (event) => {
+        if (!el.notificationPanel || el.notificationPanel.classList.contains("hidden")) return;
+        if (el.notificationPanel.contains(event.target) || el.notificationBtn?.contains(event.target)) return;
+        el.notificationPanel.classList.add("hidden");
       });
 
       document.querySelectorAll(".nav-btn").forEach((btn) => {

@@ -530,6 +530,12 @@ def create_open_savings_request():
         if float(user[0]) < amount:
             return jsonify({"message": "Số dư ví không đủ để mở sổ tiết kiệm!"}), 400
 
+        # Mở sổ tức thì: trừ tiền ví + tạo sổ + ghi nhận giao dịch đã duyệt.
+        cursor.execute(
+            "UPDATE users SET wallet_balance = wallet_balance - %s WHERE user_id = %s",
+            (amount, user_id)
+        )
+
         cursor.execute(
             """
             INSERT INTO savings_accounts (user_id, product_id, principal_balance, status)
@@ -542,7 +548,7 @@ def create_open_savings_request():
         cursor.execute(
             """
             INSERT INTO transactions (user_id, account_id, amount, transaction_type, status)
-            VALUES (%s, %s, %s, 'OPEN_SAVINGS', 'PENDING')
+            VALUES (%s, %s, %s, 'OPEN_SAVINGS', 'APPROVED')
             """,
             (user_id, new_account_id, amount)
         )
@@ -551,10 +557,10 @@ def create_open_savings_request():
         conn.commit()
 
         return jsonify({
-            "message": "Đã tạo yêu cầu mở sổ tiết kiệm, vui lòng chờ duyệt!",
+            "message": "Mở sổ tiết kiệm thành công!",
             "transaction_id": new_transaction_id,
             "account_id": new_account_id,
-            "status": "PENDING"
+            "status": "APPROVED"
         }), 201
     except Exception as e:
         conn.rollback()
