@@ -5,6 +5,7 @@ import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import SavingsProducts from './pages/admin/SavingsProducts';
 import SystemConfigs from './pages/admin/SystemConfigs';
+import TransactionApprovals from './pages/admin/TransactionApprovals';
 
 function ProtectedRoute({ allowedRoles, children }) {
   const token = localStorage.getItem('token');
@@ -36,6 +37,7 @@ export default function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="transactions" element={<TransactionApprovals />} />
           <Route path="savings-products" element={<SavingsProducts />} />
           <Route path="configs" element={<SystemConfigs />} />
         </Route>

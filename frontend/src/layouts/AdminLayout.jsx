@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 const NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', icon: '📊' },
   { to: '/admin/users', label: 'Quản lý Nhân sự', icon: '👥' },
+  { to: '/admin/transactions', label: 'Duyệt giao dịch', icon: '✅' },
   { to: '/admin/savings-products', label: 'Gói Tiết kiệm', icon: '💰' },
   { to: '/admin/configs', label: 'Tham số Hệ thống', icon: '⚙️' },
 ];
