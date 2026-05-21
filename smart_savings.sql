@@ -1,5 +1,11 @@
 DROP DATABASE IF EXISTS modern_savings_db;
 CREATE DATABASE modern_savings_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER IF NOT EXISTS 'smart_savings'@'localhost' IDENTIFIED BY 'SmartSavings@2026!';
+ALTER USER 'smart_savings'@'localhost' IDENTIFIED BY 'SmartSavings@2026!';
+GRANT ALL PRIVILEGES ON modern_savings_db.* TO 'smart_savings'@'localhost';
+FLUSH PRIVILEGES;
+
 USE modern_savings_db;
 
 -- ==========================================
@@ -65,8 +71,9 @@ CREATE TABLE transactions (
     target_product_id INT NULL, -- Gói tiết kiệm nhắm tới (Dùng khi chờ Staff duyệt)
     amount DECIMAL(15, 2) NOT NULL CHECK (amount > 0), -- Số tiền GD, chặn số âm
     
-    transaction_type ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS', 'CLOSE_SAVINGS') NOT NULL,
+    transaction_type ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') NOT NULL,
     status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING', -- Trạng thái duyệt
+    interest_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00, -- Tiền lãi phát sinh khi rút/tất toán
     
     processed_by INT NULL, -- Staff nào duyệt?
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
@@ -77,3 +84,8 @@ CREATE TABLE transactions (
     FOREIGN KEY (target_product_id) REFERENCES savings_products(product_id),
     FOREIGN KEY (processed_by) REFERENCES users(user_id)
 );
+
+INSERT INTO system_configs (config_key, config_value, description) VALUES
+('MIN_OPEN_AMOUNT', '1000000', 'So tien toi thieu khi mo so tiet kiem'),
+('MIN_SAVINGS_DEPOSIT_AMOUNT', '100000', 'So tien toi thieu khi gui them vao so'),
+('NON_TERM_MIN_DAYS', '15', 'So ngay toi thieu de rut so khong ky han');

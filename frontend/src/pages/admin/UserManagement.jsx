@@ -59,7 +59,7 @@ export default function UserManagement() {
 
   const handleChangeRole = async (userId, newRole) => {
     try {
-      await api.put(`/admin/users/${userId}/role`, { role: newRole });
+      await api.patch(`/admin/users/${userId}`, { role: newRole });
       fetchUsers();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi!');
@@ -68,7 +68,7 @@ export default function UserManagement() {
 
   const handleToggleStatus = async (userId, newStatus) => {
     try {
-      await api.put(`/admin/users/${userId}/status`, { status: newStatus });
+      await api.patch(`/admin/users/${userId}`, { status: newStatus });
       fetchUsers();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi!');

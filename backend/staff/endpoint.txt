@@ -5,4 +5,5 @@ GET /api/balance-system -> Xem tổng số dư ví và tổng tiền gốc tiế
 GET /api/users -> Lấy danh sách thông tin khách hàng (role CUSTOMER).
 GET /api/savings-accounts -> Lấy danh sách toàn bộ sổ tiết kiệm.
 GET /api/savings-accounts/<int:account_id> -> Xem chi tiết một sổ tiết kiệm cụ thể.
-
+GET /api/reports/daily-activity?date=YYYY-MM-DD -> BM5.1 báo cáo doanh số hoạt động ngày.
+GET /api/reports/monthly-open-close?month=YYYY-MM -> BM5.2 báo cáo mở/đóng sổ tháng.

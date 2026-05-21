@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý sổ tiết kiệm - Staff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #ffffff;
+      --ink: #111827;
+      --muted: #526070;
+      --line: #111827;
+      --brand: #dd614c;
+      --brand-dark: #b84331;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --warning: #d97706;
+      --secondary: #daa144;
+      --soft: #ecfdf5;
+      --shadow: 7px 7px 0 #111827;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Darker Grotesque', system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, rgba(17,24,39,.05) 1px, transparent 1px),
+        linear-gradient(rgba(17,24,39,.05) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      font-size: 18px;
+    }
+    button, input, select { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    .hidden { display: none !important; }
+
+    .login {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) 420px;
+      background: var(--brand);
+    }
+    .login-copy { color: var(--ink); padding: 72px; display: flex; flex-direction: column; justify-content: center; border-right: 4px solid var(--line); }
+    .login-copy h1 { font-size: 76px; line-height: .85; margin: 0 0 24px; letter-spacing: 0; max-width: 720px; font-weight: 900; }
+    .login-copy p { margin: 0; color: var(--ink); font-size: 24px; line-height: 1.15; max-width: 640px; font-weight: 700; }
+    .login-card { background: #fff; margin: 32px; border: 3px solid var(--line); border-radius: 0; padding: 32px; align-self: center; box-shadow: var(--shadow); }
+    .login-card h2 { margin: 0 0 6px; font-size: 42px; line-height: .9; font-weight: 900; }
+    .login-card small { color: var(--muted); }
+    .field { margin-top: 18px; }
+    label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; }
+    input, select {
+      width: 100%;
+      border: 2px solid var(--line);
+      border-radius: 0;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--ink);
+    }
+    .primary {
+      background: var(--brand);
+      color: #fff;
+      border: 2px solid var(--line);
+      border-radius: 0;
+      padding: 10px 14px;
+      font-weight: 900;
+      box-shadow: 4px 4px 0 var(--line);
+    }
+    .primary:hover { background: var(--brand-dark); }
+    .ghost { background: #fff; color: var(--ink); border: 2px solid var(--line); border-radius: 0; padding: 9px 12px; font-weight: 900; box-shadow: 4px 4px 0 var(--line); }
+    .danger { background: #fee2e2; color: var(--danger); border: 2px solid var(--line); border-radius: 0; padding: 8px 10px; font-weight: 900; }
+    .success { background: #dcfce7; color: var(--success); border: 2px solid var(--line); border-radius: 0; padding: 8px 10px; font-weight: 900; }
+    .error { margin-top: 16px; color: #b91c1c; background: #fef2f2; border: 2px solid var(--line); border-radius: 0; padding: 10px; font-size: 16px; font-weight: 800; }
+    .toast {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 9999;
+      max-width: min(420px, calc(100vw - 36px));
+      background: #fff;
+      color: var(--ink);
+      border: 3px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      font-weight: 900;
+    }
+    .toast.success { background: #dcfce7; }
+    .toast.error { background: #fee2e2; }
+
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
+    aside { background: #0b1220; color: #fff; padding: 22px 16px; border-right: 4px solid var(--line); }
+    .brand { padding: 8px 10px 22px; border-bottom: 3px solid rgba(255,255,255,0.9); }
+    .brand strong { display: block; font-size: 30px; line-height: .9; font-weight: 900; }
+    .brand span { color: rgba(255,255,255,0.62); font-size: 12px; }
+    .nav { padding-top: 18px; display: grid; gap: 6px; }
+    .nav button {
+      width: 100%;
+      text-align: left;
+      padding: 11px 12px;
+      border-radius: 0;
+      color: rgba(255,255,255,0.72);
+      background: transparent;
+      font-weight: 900;
+      font-size: 20px;
+    }
+    .nav button.active, .nav button:hover { color: var(--ink); background: var(--secondary); outline: 2px solid #fff; }
+    .logout { margin-top: 24px; width: 100%; background: rgba(255,255,255,0.08); color: #fff; border: 2px solid rgba(255,255,255,0.9); border-radius: 0; padding: 10px; font-weight: 900; }
+    main { padding: 24px; overflow: auto; }
+    .topbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 20px; }
+    .topbar h1 { margin: 0; font-size: 48px; line-height: .9; font-weight: 900; letter-spacing: 0; }
+    .topbar p { margin: 4px 0 0; color: var(--muted); }
+    .toolbar { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin-bottom: 14px; }
+    .toolbar .field { margin: 0; min-width: 180px; }
+    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .card { background: var(--panel); border: 3px solid var(--line); border-radius: 0; padding: 16px; box-shadow: var(--shadow); }
+    .card span { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; }
+    .card strong { display: block; font-size: 38px; line-height: .9; margin-top: 8px; font-weight: 900; }
+    .panel { background: var(--panel); border: 3px solid var(--line); border-radius: 0; overflow: auto; box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; font-size: 18px; }
+    th { background: var(--ink); color: #fff; text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0; }
+    th, td { padding: 12px 14px; border-bottom: 2px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    .status { display: inline-flex; border-radius: 0; border: 2px solid var(--line); padding: 3px 9px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 800; }
+    .PENDING { background: #fffbeb; color: var(--warning); }
+    .APPROVED { background: #ecfdf5; color: var(--success); }
+    .REJECTED { background: #fef2f2; color: #b91c1c; }
+    .muted { color: var(--muted); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .empty { padding: 24px; color: var(--muted); text-align: center; }
+    @media (max-width: 980px) {
+      .login { grid-template-columns: 1fr; }
+      .login-copy { padding: 36px; }
+      .shell { grid-template-columns: 1fr; }
+      aside { position: static; }
+      .cards, .split { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <section id="loginPage" class="login">
+    <div class="login-copy">
+      <h1>Staff Operations Console</h1>
+      <p>Không gian xử lý nghiệp vụ tại quầy: duyệt yêu cầu, tra cứu sổ tiết kiệm, theo dõi cân đối hệ thống và lập báo cáo BM5.</p>
+    </div>
+    <form id="loginForm" class="login-card">
+      <h2>Đăng nhập nhân viên</h2>
+      <small>Chỉ tài khoản STAFF hoặc ADMIN được truy cập phân hệ này.</small>
+      <div class="field">
+        <label>Email</label>
+        <input id="email" type="email" value="staff@gmail.com" required>
+      </div>
+      <div class="field">
+        <label>Mật khẩu</label>
+        <input id="password" type="password" value="staff123" required>
+      </div>
+      <button class="primary" style="width:100%;margin-top:22px;" type="submit">Đăng nhập</button>
+      <div id="loginError" class="error hidden"></div>
+    </form>
+  </section>
+
+  <section id="appShell" class="shell hidden">
+    <aside>
+      <div class="brand">
+        <strong>Quản lý sổ tiết kiệm</strong>
+        <span>Staff Console</span>
+      </div>
+      <div class="nav">
+        <button class="active" data-page="dashboard">Tổng quan</button>
+        <button data-page="transactions">Duyệt giao dịch</button>
+        <button data-page="customers">Khách hàng</button>
+        <button data-page="accounts">Sổ tiết kiệm</button>
+        <button data-page="reports">Báo cáo BM5</button>
+      </div>
+      <button id="logoutBtn" class="logout">Đăng xuất</button>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <div>
+          <h1 id="pageTitle">Tổng quan</h1>
+          <p id="pageSub">Theo dõi nhanh giao dịch chờ duyệt và cân đối hệ thống.</p>
+        </div>
+        <button id="refreshBtn" class="ghost">Làm mới dữ liệu</button>
+      </div>
+
+      <section id="page-dashboard" class="page">
+        <div class="cards">
+          <div class="card"><span>Giao dịch chờ duyệt</span><strong id="pendingCount">0</strong></div>
+          <div class="card"><span>Khách hàng</span><strong id="customerCount">0</strong></div>
+          <div class="card"><span>Sổ đang quản lý</span><strong id="accountCount">0</strong></div>
+          <div class="card"><span>Tổng tiền gửi</span><strong id="totalSavings">0 VND</strong></div>
+        </div>
+        <div class="panel">
+          <table>
+            <thead><tr><th>Mã GD</th><th>Khách hàng</th><th>Loại</th><th>Số tiền</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+            <tbody id="dashboardTransactions"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="page-transactions" class="page hidden">
+        <div class="toolbar">
+          <div class="field">
+            <label>Trạng thái</label>
+            <select id="txStatus">
+              <option value="PENDING">PENDING</option>
+              <option value="">Tất cả</option>
+              <option value="APPROVED">APPROVED</option>
+              <option value="REJECTED">REJECTED</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Loại giao dịch</label>
+            <select id="txType">
+              <option value="">Tất cả</option>
+              <option value="DEPOSIT_TO_WALLET">Nạp ví</option>
+              <option value="WITHDRAW_FROM_WALLET">Rút ví</option>
+              <option value="OPEN_SAVINGS">Mở sổ</option>
+              <option value="DEPOSIT_TO_SAVINGS">Gửi thêm vào sổ</option>
+              <option value="WITHDRAW_FROM_SAVINGS">Rút từ sổ</option>
+              <option value="CLOSE_SAVINGS">Tất toán sổ</option>
+            </select>
+          </div>
+          <button id="loadTxBtn" class="primary">Tải danh sách</button>
+        </div>
+        <div class="panel">
+          <table>
+            <thead><tr><th>Mã GD</th><th>Khách hàng</th><th>Sổ/Gói</th><th>Loại</th><th>Số tiền</th><th>Lãi</th><th>Trạng thái</th><th>Ngày tạo</th><th>Hành động</th></tr></thead>
+            <tbody id="transactionsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="page-customers" class="page hidden">
+        <div class="panel">
+          <table>
+            <thead><tr><th>Mã KH</th><th>Họ tên</th><th>Email</th><th>CMND/CCCD</th><th>Số dư ví</th><th>Trạng thái</th><th>Ngày tạo</th></tr></thead>
+            <tbody id="customersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="page-accounts" class="page hidden">
+        <div class="panel">
+          <table>
+            <thead><tr><th>Mã sổ</th><th>Khách hàng</th><th>Loại tiết kiệm</th><th>Số dư gốc</th><th>Lãi suất</th><th>Kỳ hạn</th><th>Ngày mở</th><th>Trạng thái</th></tr></thead>
+            <tbody id="accountsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="page-reports" class="page hidden">
+        <div class="split">
+          <div class="card">
+            <h3 style="margin-top:0;">BM5.1 - Doanh số ngày</h3>
+            <div class="toolbar">
+              <div class="field"><label>Ngày</label><input id="dailyDate" type="date"></div>
+              <button id="loadDailyBtn" class="primary">Tải báo cáo</button>
+            </div>
+            <div class="panel">
+              <table>
+                <thead><tr><th>Loại tiết kiệm</th><th>Tổng thu</th><th>Tổng chi</th><th>Chênh lệch</th></tr></thead>
+                <tbody id="dailyBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0;">BM5.2 - Mở/đóng sổ tháng</h3>
+            <div class="toolbar">
+              <div class="field"><label>Tháng</label><input id="monthInput" type="month"></div>
+              <button id="loadMonthlyBtn" class="primary">Tải báo cáo</button>
+            </div>
+            <div class="panel">
+              <table>
+                <thead><tr><th>Ngày</th><th>Loại tiết kiệm</th><th>Mở</th><th>Đóng</th><th>Chênh lệch</th></tr></thead>
+                <tbody id="monthlyBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5000";
+    const ROLE_HOME = { ADMIN: "/admin", STAFF: "/staff/", CUSTOMER: "/client/" };
+    function roleHome(role) {
+      return ROLE_HOME[role] || "/login";
+    }
+    function showToast(message, type = "success") {
+      document.querySelector(".toast")?.remove();
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3200);
+    }
+
+    const sharedToken = localStorage.getItem("token") || localStorage.getItem("staff_token") || "";
+    const sharedRole = localStorage.getItem("role") || localStorage.getItem("staff_role") || "";
+    const canRenderStaff = sharedToken && sharedRole === "STAFF";
+    if (!sharedToken) {
+      window.location.replace("/login");
+    } else if (sharedRole !== "STAFF") {
+      sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ Staff.");
+      window.location.replace(roleHome(sharedRole));
+    }
+
+    const state = {
+      token: sharedToken,
+      role: sharedRole,
+      transactions: [],
+      customers: [],
+      accounts: [],
+      balance: null,
+      page: "dashboard"
+    };
+
+    const typeMap = {
+      DEPOSIT_TO_WALLET: "Nạp ví",
+      WITHDRAW_FROM_WALLET: "Rút ví",
+      OPEN_SAVINGS: "Mở sổ",
+      DEPOSIT_TO_SAVINGS: "Gửi thêm vào sổ",
+      WITHDRAW_FROM_SAVINGS: "Rút từ sổ",
+      CLOSE_SAVINGS: "Tất toán sổ"
+    };
+
+    const pageMeta = {
+      dashboard: ["Tổng quan", "Theo dõi nhanh giao dịch chờ duyệt và cân đối hệ thống."],
+      transactions: ["Duyệt giao dịch", "Xử lý hàng đợi maker-checker của khách hàng."],
+      customers: ["Khách hàng", "Tra cứu thông tin khách hàng đang sử dụng hệ thống."],
+      accounts: ["Sổ tiết kiệm", "Tra cứu toàn bộ sổ tiết kiệm theo mẫu BM4."],
+      reports: ["Báo cáo BM5", "Lập báo cáo doanh số ngày và mở/đóng sổ tháng."]
+    };
+
+    const el = {
+      loginPage: document.getElementById("loginPage"),
+      appShell: document.getElementById("appShell"),
+      loginForm: document.getElementById("loginForm"),
+      loginError: document.getElementById("loginError"),
+      email: document.getElementById("email"),
+      password: document.getElementById("password"),
+      pageTitle: document.getElementById("pageTitle"),
+      pageSub: document.getElementById("pageSub"),
+      pendingCount: document.getElementById("pendingCount"),
+      customerCount: document.getElementById("customerCount"),
+      accountCount: document.getElementById("accountCount"),
+      totalSavings: document.getElementById("totalSavings"),
+      dashboardTransactions: document.getElementById("dashboardTransactions"),
+      transactionsBody: document.getElementById("transactionsBody"),
+      customersBody: document.getElementById("customersBody"),
+      accountsBody: document.getElementById("accountsBody"),
+      txStatus: document.getElementById("txStatus"),
+      txType: document.getElementById("txType"),
+      dailyDate: document.getElementById("dailyDate"),
+      monthInput: document.getElementById("monthInput"),
+      dailyBody: document.getElementById("dailyBody"),
+      monthlyBody: document.getElementById("monthlyBody")
+    };
+
+    function money(value) {
+      return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 }).format(Number(value || 0));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+
+    async function api(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      headers.set("Content-Type", "application/json");
+      if (state.token) headers.set("Authorization", `Bearer ${state.token}`);
+      const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {};
+      if (!response.ok) throw new Error(data.message || data.error || "Không thể kết nối server.");
+      return data;
+    }
+
+    function setAuthView() {
+      const loggedIn = !!state.token;
+      el.loginPage.classList.toggle("hidden", loggedIn);
+      el.appShell.classList.toggle("hidden", !loggedIn);
+    }
+
+    function setPage(page) {
+      state.page = page;
+      document.querySelectorAll(".page").forEach((panel) => panel.classList.add("hidden"));
+      document.getElementById(`page-${page}`)?.classList.remove("hidden");
+      document.querySelectorAll(".nav button").forEach((btn) => btn.classList.toggle("active", btn.dataset.page === page));
+      el.pageTitle.textContent = pageMeta[page][0];
+      el.pageSub.textContent = pageMeta[page][1];
+    }
+
+    function renderRows(target, rows, emptyText) {
+      target.innerHTML = rows.length ? rows.join("") : `<tr><td colspan="12" class="empty">${escapeHtml(emptyText)}</td></tr>`;
+    }
+
+    function actionButtons(tx) {
+      if (tx.status !== "PENDING") return `<span class="muted">Đã xử lý</span>`;
+      return `
+        <button class="success" data-action="approve" data-id="${tx.transaction_id}">Duyệt</button>
+        <button class="danger" data-action="reject" data-id="${tx.transaction_id}">Từ chối</button>
+      `;
+    }
+
+    function transactionRow(tx, compact = false) {
+      return `
+        <tr>
+          <td>#${escapeHtml(tx.transaction_id)}</td>
+          <td>${escapeHtml(tx.customer_name)}</td>
+          ${compact ? "" : `<td>${tx.account_id ? `Sổ #${escapeHtml(tx.account_id)}` : escapeHtml(tx.target_product_name || "-")}</td>`}
+          <td>${escapeHtml(typeMap[tx.transaction_type] || tx.transaction_type)}</td>
+          <td>${money(tx.amount)}</td>
+          ${compact ? "" : `<td>${money(tx.interest_amount)}</td>`}
+          <td><span class="status ${escapeHtml(tx.status)}">${escapeHtml(tx.status)}</span></td>
+          ${compact ? "" : `<td>${escapeHtml(tx.created_at)}</td>`}
+          <td>${actionButtons(tx)}</td>
+        </tr>
+      `;
+    }
+
+    function bindTransactionActions(root) {
+      root.querySelectorAll("button[data-action]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const id = btn.dataset.id;
+          const action = btn.dataset.action;
+          if (!confirm(`${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch #${id}?`)) return;
+          try {
+            await api(`/api/transactions/${id}`, {
+              method: "PATCH",
+              body: JSON.stringify({ status: action === "approve" ? "APPROVED" : "REJECTED" })
+            });
+            showToast(`${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch thành công.`);
+            await loadAll();
+          } catch (error) {
+            showToast(error.message, "error");
+          }
+        });
+      });
+    }
+
+    function renderDashboard() {
+      const pending = state.transactions.filter((tx) => tx.status === "PENDING");
+      el.pendingCount.textContent = pending.length;
+      el.customerCount.textContent = state.customers.length;
+      el.accountCount.textContent = state.accounts.length;
+      el.totalSavings.textContent = money(state.balance?.total_savings_principal || 0);
+      renderRows(el.dashboardTransactions, pending.slice(0, 8).map((tx) => transactionRow(tx, true)), "Không có giao dịch chờ duyệt.");
+      bindTransactionActions(el.dashboardTransactions);
+    }
+
+    function renderTransactions() {
+      renderRows(el.transactionsBody, state.transactions.map((tx) => transactionRow(tx)), "Không có giao dịch phù hợp.");
+      bindTransactionActions(el.transactionsBody);
+    }
+
+    function renderCustomers() {
+      renderRows(el.customersBody, state.customers.map((user) => `
+        <tr>
+          <td>#${escapeHtml(user.user_id)}</td>
+          <td><strong>${escapeHtml(user.full_name)}</strong></td>
+          <td>${escapeHtml(user.email)}</td>
+          <td>${escapeHtml(user.identity_card || "-")}</td>
+          <td>${money(user.wallet_balance)}</td>
+          <td>${escapeHtml(user.status)}</td>
+          <td>${escapeHtml(user.created_at)}</td>
+        </tr>
+      `), "Chưa có khách hàng.");
+    }
+
+    function renderAccounts() {
+      renderRows(el.accountsBody, state.accounts.map((account) => `
+        <tr>
+          <td>#${escapeHtml(account.account_id)}</td>
+          <td>${escapeHtml(account.customer_name)}</td>
+          <td>${escapeHtml(account.product_name)}</td>
+          <td>${money(account.principal_balance)}</td>
+          <td>${escapeHtml(account.interest_rate)}%/năm</td>
+          <td>${Number(account.term_months || 0) === 0 ? "Không kỳ hạn" : `${escapeHtml(account.term_months)} tháng`}</td>
+          <td>${escapeHtml(account.opened_at)}</td>
+          <td><span class="status ${account.status === "ACTIVE" ? "APPROVED" : "REJECTED"}">${escapeHtml(account.status)}</span></td>
+        </tr>
+      `), "Chưa có sổ tiết kiệm.");
+    }
+
+    function renderAll() {
+      renderDashboard();
+      renderTransactions();
+      renderCustomers();
+      renderAccounts();
+    }
+
+    async function loadTransactions() {
+      const params = new URLSearchParams();
+      if (el.txStatus.value) params.set("status", el.txStatus.value);
+      if (el.txType.value) params.set("transaction_type", el.txType.value);
+      const res = await api(`/api/transactions?${params.toString()}`);
+      state.transactions = res.transactions || [];
+    }
+
+    async function loadAll() {
+      try {
+        const [txRes, customersRes, accountsRes, balanceRes] = await Promise.all([
+          api("/api/transactions?status=PENDING"),
+          api("/api/users"),
+          api("/api/savings-accounts"),
+          api("/api/balance-system")
+        ]);
+        state.transactions = txRes.transactions || [];
+        state.customers = customersRes.users || [];
+        state.accounts = accountsRes.accounts || [];
+        state.balance = balanceRes;
+        renderAll();
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+
+    async function loadDailyReport() {
+      try {
+        const res = await api(`/api/reports/daily-activity?date=${encodeURIComponent(el.dailyDate.value)}`);
+        renderRows(el.dailyBody, (res.items || []).map((item) => `
+          <tr><td>${escapeHtml(item.product_name)}</td><td>${money(item.total_in)}</td><td>${money(item.total_out)}</td><td>${money(item.difference)}</td></tr>
+        `), "Không có dữ liệu cho ngày này.");
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+
+    async function loadMonthlyReport() {
+      try {
+        const res = await api(`/api/reports/monthly-open-close?month=${encodeURIComponent(el.monthInput.value)}`);
+        renderRows(el.monthlyBody, (res.items || []).map((item) => `
+          <tr><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.product_name)}</td><td>${escapeHtml(item.opened_count)}</td><td>${escapeHtml(item.closed_count)}</td><td>${escapeHtml(item.difference)}</td></tr>
+        `), "Không có dữ liệu cho tháng này.");
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+
+    el.loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      el.loginError.classList.add("hidden");
+      try {
+        const res = await api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email: el.email.value.trim(), password: el.password.value })
+        });
+        if (res.role !== "STAFF") throw new Error("Tài khoản này không có quyền truy cập phân hệ Staff.");
+        state.token = res.token;
+        state.role = res.role;
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("role", res.role);
+        localStorage.setItem("username", el.email.value.trim());
+        localStorage.setItem("staff_token", res.token);
+        localStorage.setItem("staff_role", res.role);
+        showToast("Đăng nhập Staff thành công.");
+        setAuthView();
+        setPage("dashboard");
+        await loadAll();
+      } catch (error) {
+        el.loginError.textContent = error.message;
+        el.loginError.classList.remove("hidden");
+      }
+    });
+
+    document.querySelectorAll(".nav button").forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.page)));
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      state.token = "";
+      state.role = "";
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
+      localStorage.removeItem("staff_token");
+      localStorage.removeItem("staff_role");
+      window.location.replace("/login");
+    });
+    document.getElementById("refreshBtn").addEventListener("click", loadAll);
+    document.getElementById("loadTxBtn").addEventListener("click", async () => {
+      await loadTransactions();
+      renderTransactions();
+    });
+    document.getElementById("loadDailyBtn").addEventListener("click", loadDailyReport);
+    document.getElementById("loadMonthlyBtn").addEventListener("click", loadMonthlyReport);
+
+    const now = new Date();
+    el.dailyDate.value = now.toISOString().slice(0, 10);
+    el.monthInput.value = now.toISOString().slice(0, 7);
+    if (canRenderStaff) {
+      setAuthView();
+      const flash = sessionStorage.getItem("flash_message");
+      if (flash) {
+        showToast(flash, "error");
+        sessionStorage.removeItem("flash_message");
+      }
+      setPage("dashboard");
+      if (state.token) loadAll();
+    }
+  </script>
+</body>
+</html>

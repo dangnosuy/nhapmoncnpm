@@ -55,7 +55,7 @@ export default function SystemConfigs() {
 
   const handleUpdate = async (key) => {
     try {
-      await api.put(`/admin/configs/${key}`, editForm);
+      await api.patch(`/admin/configs/${key}`, editForm);
       setEditKey(null);
       fetchConfigs();
     } catch (err) {

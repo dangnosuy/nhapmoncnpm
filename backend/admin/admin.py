@@ -307,6 +307,45 @@ def toggle_user_status(user_id):
         return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
 
 
+@admin_bp.route('/api/admin/users/<int:user_id>', methods=['PATCH'])
+@require_role(['ADMIN'])
+def patch_user(user_id):
+    """RESTful endpoint cập nhật role/status của người dùng."""
+    data = request.get_json() or {}
+    admin_id = request.user_data.get('user_id')
+
+    if user_id == admin_id and ('role' in data or data.get('status') == 'LOCKED'):
+        return jsonify({'message': 'Không thể tự khóa hoặc đổi role chính tài khoản của mình!'}), 400
+
+    allowed_updates = {}
+    if 'role' in data:
+        if data['role'] not in ('CUSTOMER', 'STAFF', 'ADMIN'):
+            return jsonify({'message': 'Role không hợp lệ!'}), 400
+        allowed_updates['role'] = data['role']
+
+    if 'status' in data:
+        if data['status'] not in ('ACTIVE', 'LOCKED'):
+            return jsonify({'message': 'Status không hợp lệ!'}), 400
+        allowed_updates['status'] = data['status']
+
+    if not allowed_updates:
+        return jsonify({'message': 'Không có trường hợp lệ để cập nhật!'}), 400
+
+    try:
+        db_cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (user_id,))
+        if not db_cursor.fetchone():
+            return jsonify({'message': 'Không tìm thấy người dùng!'}), 404
+
+        set_clause = ', '.join(f"{field} = %s" for field in allowed_updates)
+        values = list(allowed_updates.values()) + [user_id]
+        db_cursor.execute(f"UPDATE users SET {set_clause} WHERE user_id = %s", tuple(values))
+        db_conn.commit()
+        return jsonify({'message': 'Cập nhật người dùng thành công!', 'user_id': user_id}), 200
+    except Exception as e:
+        db_conn.rollback()
+        return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
+
+
 # ============================================================
 #  3. QUẢN LÝ GÓI TIẾT KIỆM (SAVINGS PRODUCTS - QĐ6)
 # ============================================================
@@ -382,6 +421,7 @@ def create_product():
         return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
 
 
+@admin_bp.route('/api/admin/savings-products/<int:product_id>', methods=['PATCH'])
 @admin_bp.route('/api/admin/savings-products/<int:product_id>', methods=['PUT'])
 @require_role(['ADMIN'])
 def update_product(product_id):
@@ -476,6 +516,7 @@ def get_all_configs():
         return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
 
 
+@admin_bp.route('/api/admin/configs/<string:config_key>', methods=['PATCH'])
 @admin_bp.route('/api/admin/configs/<string:config_key>', methods=['PUT'])
 @require_role(['ADMIN'])
 def update_config(config_key):

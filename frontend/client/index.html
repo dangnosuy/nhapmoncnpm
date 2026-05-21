@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UIT Banking</title>
+  <title>Quản lý sổ tiết kiệm</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -407,6 +407,21 @@
       padding: 12px 14px;
       font-size: 14px;
     }
+    .toast {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 9999;
+      max-width: min(420px, calc(100vw - 36px));
+      background: #fff;
+      color: var(--text);
+      border: 3px solid #111827;
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      font-weight: 900;
+    }
+    .toast.success { background: #dcfce7; }
+    .toast.error { background: #fee2e2; }
     .login-trust-row {
       margin-top: 14px;
       display: grid;
@@ -981,6 +996,7 @@
       .login-left { display: none; }
       .login-container { padding: 20px; display: flex; }
       .dashboard-wrap { grid-template-columns: 1fr; }
+      .content-grid { padding-bottom: 120px; }
       .sidebar-card { display: none; }
       .bottom-nav { display: block; }
       .mobile-top { display: flex; }
@@ -1006,6 +1022,134 @@
       .account-amount { font-size: 28px; }
       .transaction-item { align-items: flex-start; flex-direction: column; }
       .transaction-right { text-align: left; }
+    }
+
+    /* Brutalism design-system pass: shared visual language for the customer app. */
+    :root {
+      --gold-1: #fff7ed;
+      --gold-2: #fed7aa;
+      --gold-3: #daa144;
+      --gold-4: #dd614c;
+      --bg: #f4f1ea;
+      --card: #ffffff;
+      --soft: #fff7ed;
+      --text: #111827;
+      --muted: #526070;
+      --blue: #dd614c;
+      --danger: #dc2626;
+      --success: #16a34a;
+      --warning: #d97706;
+      --shadow: 7px 7px 0 #111827;
+      --radius-xl: 0;
+      --radius-lg: 0;
+      --radius-md: 0;
+    }
+
+    html, body {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,.05) 1px, transparent 1px),
+        linear-gradient(rgba(17,24,39,.05) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--text);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 3px solid var(--gold-3);
+      outline-offset: 3px;
+    }
+
+    .login-page {
+      background: var(--gold-4);
+      color: var(--text);
+    }
+
+    .login-card,
+    .login-card-main,
+    .login-card-footer,
+    .section-card,
+    .account-tile,
+    .product-tile,
+    .profile-tile,
+    .transaction-item,
+    .quick-tile,
+    .service-tile,
+    .promo-card,
+    .notification-panel,
+    .hero {
+      border: 3px solid #111827 !important;
+      border-radius: 0 !important;
+      box-shadow: var(--shadow) !important;
+      background: #fff !important;
+    }
+
+    .login-title-main,
+    .hero-title,
+    .section-head h2,
+    .promo-card h3 {
+      letter-spacing: 0 !important;
+      font-weight: 900 !important;
+    }
+
+    .sidebar-card,
+    .mobile-top {
+      background: #111827 !important;
+      border: 3px solid #111827 !important;
+      border-radius: 0 !important;
+    }
+
+    .nav-btn,
+    .bottom-btn,
+    .primary-btn,
+    .outline-btn,
+    .quick-tile,
+    .service-tile,
+    .icon-btn,
+    .footer-action {
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      font-weight: 900 !important;
+      box-shadow: 4px 4px 0 #111827 !important;
+      transition: transform .12s ease, box-shadow .12s ease !important;
+    }
+
+    .nav-btn:hover,
+    .bottom-btn:hover,
+    .primary-btn:hover,
+    .outline-btn:hover,
+    .quick-tile:hover,
+    .service-tile:hover,
+    .icon-btn:hover,
+    .footer-action:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 #111827 !important;
+    }
+
+    .nav-btn.active,
+    .bottom-btn.active,
+    .primary-btn {
+      background: var(--gold-4) !important;
+      color: #fff !important;
+    }
+
+    input,
+    select {
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      color: #111827 !important;
+      background: #fff !important;
+      font-weight: 700;
+    }
+
+    .chip,
+    .mini-chip,
+    .tx-status,
+    .quick-badge {
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      font-weight: 900 !important;
     }
   </style>
 </head>
@@ -1034,9 +1178,9 @@
             <div class="brand-icon">
               <span></span><span></span><span></span><span></span>
             </div>
-            <div class="brand-text">UIT Bank</div>
+            <div class="brand-text">Sổ tiết kiệm</div>
           </div>
-          <h1>Ngân hàng số UIT.</h1>
+          <h1>Nền tảng tiết kiệm số.</h1>
           <p>
             Giá trị tích lũy niềm tin
           </p>
@@ -1057,7 +1201,7 @@
             <div class="mobile-top" style="justify-content: space-between; align-items: center; margin-bottom: 18px;">
               <div class="brand">
                 <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
-                <div class="brand-text">UIT Bank</div>
+                <div class="brand-text">Sổ tiết kiệm</div>
               </div>
               <div style="display:flex; gap:10px;">
                 <div class="circle-icon"><i class="fa-regular fa-bell"></i></div>
@@ -1166,7 +1310,7 @@
           <div class="sidebar-inner">
             <div class="brand">
               <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
-              <div class="brand-text">UIT Bank</div>
+              <div class="brand-text">Sổ tiết kiệm</div>
             </div>
 
             <div class="sidebar-profile">
@@ -1195,7 +1339,7 @@
             <div class="hero-top">
               <div class="brand">
                 <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
-                <div class="brand-text">UIT Bank</div>
+                <div class="brand-text">Sổ tiết kiệm</div>
               </div>
               <div class="hero-icons">
                 <div class="notify-wrap">
@@ -1424,9 +1568,24 @@
       return `Không thể kết nối tới backend. Trang hiện tại: ${runtime}. Đã thử: ${tried}.${suffix}`;
     }
 
+    const ROLE_HOME = { ADMIN: "/admin", STAFF: "/staff/", CUSTOMER: "/client/" };
+    function roleHome(role) {
+      return ROLE_HOME[role] || "/login";
+    }
+
+    function showToast(message, type = "success") {
+      document.querySelector(".toast")?.remove();
+      const toast = document.createElement("div");
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3200);
+    }
+
     const appState = {
-      token: localStorage.getItem("client_token") || "",
-      username: localStorage.getItem("client_username") || "",
+      token: localStorage.getItem("token") || localStorage.getItem("client_token") || "",
+      role: localStorage.getItem("role") || "CUSTOMER",
+      username: localStorage.getItem("username") || localStorage.getItem("client_username") || "",
       isRegisterMode: false,
       isForgotPasswordMode: false,
       showMoney: false,
@@ -1533,6 +1692,8 @@
         DEPOSIT_TO_WALLET: "Nạp tiền vào ví",
         WITHDRAW_FROM_WALLET: "Rút tiền từ ví",
         OPEN_SAVINGS: "Mở sổ tiết kiệm",
+        DEPOSIT_TO_SAVINGS: "Gửi thêm vào sổ",
+        WITHDRAW_FROM_SAVINGS: "Rút tiền từ sổ",
         CLOSE_SAVINGS: "Tất toán sổ"
       };
       return map[type] || type || "Giao dịch";
@@ -1671,7 +1832,7 @@
 
     function renderAccounts(target, accounts) {
       if (!accounts.length) {
-        target.innerHTML = `<div class="empty-box">Bạn chưa có sổ tiết kiệm nào. Khi backend có API mở sổ trên UI, mình sẽ nối tiếp ngay.</div>`;
+        target.innerHTML = `<div class="empty-box">Bạn chưa có sổ tiết kiệm nào. Chọn một gói đang hoạt động và gửi yêu cầu mở sổ.</div>`;
         return;
       }
 
@@ -1691,6 +1852,24 @@
             <span class="chip">Mở ngày ${escapeHtml(item.opened_at)}</span>
           </div>
           ${item.status === "ACTIVE" ? `
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+              <button
+                class="outline-btn deposit-savings-btn"
+                data-account-id="${escapeHtml(item.account_id)}"
+                type="button"
+              >
+                Gửi thêm
+              </button>
+              ${Number(item.term_months || 0) === 0 ? `
+                <button
+                  class="outline-btn withdraw-savings-btn"
+                  data-account-id="${escapeHtml(item.account_id)}"
+                  type="button"
+                >
+                  Rút một phần
+                </button>
+              ` : ""}
+            </div>
             <button
               class="outline-btn close-savings-btn"
               data-account-id="${escapeHtml(item.account_id)}"
@@ -1708,6 +1887,22 @@
           const accountId = Number(btn.dataset.accountId);
           if (!accountId) return;
           await handleCloseSavingsRequest(accountId);
+        });
+      });
+
+      target.querySelectorAll(".deposit-savings-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const accountId = Number(btn.dataset.accountId);
+          if (!accountId) return;
+          await handleSavingsDepositRequest(accountId);
+        });
+      });
+
+      target.querySelectorAll(".withdraw-savings-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const accountId = Number(btn.dataset.accountId);
+          if (!accountId) return;
+          await handleSavingsWithdrawRequest(accountId);
         });
       });
     }
@@ -1762,6 +1957,7 @@
             </div>
             <div class="transaction-right">
               <div class="transaction-amount">${money(tx.amount)}</div>
+              ${Number(tx.interest_amount || 0) > 0 ? `<div class="transaction-sub">Lãi ${money(tx.interest_amount)}</div>` : ""}
               <div class="tx-status ${statusClass}">${escapeHtml(tx.status)}</div>
             </div>
           </div>
@@ -1893,7 +2089,7 @@
         renderAll();
       } catch (error) {
         console.error(error);
-        alert(error.message || "Không thể tải dữ liệu từ server.");
+        showToast(error.message || "Không thể tải dữ liệu từ server.", "error");
       } finally {
         setLoading(false);
       }
@@ -1920,7 +2116,7 @@
         el.registerBtn.disabled = true;
         el.registerBtn.textContent = "Đang tạo tài khoản";
 
-        await apiRequest("/api/register", {
+        const res = await apiRequest("/api/auth/register", {
           method: "POST",
           body: JSON.stringify({
             email,
@@ -1931,7 +2127,6 @@
           })
         });
 
-        setLoginError("Đăng ký thành công. Bạn có thể đăng nhập ngay.");
         el.loginUsername.value = email;
         el.loginPassword.value = "";
         el.registerEmail.value = "";
@@ -1940,7 +2135,10 @@
         el.registerFullName.value = "";
         el.registerIdentityCard.value = "";
         setRegisterMode(false);
+        showToast(res.message || "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
+        setLoginError(res.message || "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
       } catch (error) {
+        showToast(error.message || "Đăng ký thất bại.", "error");
         setLoginError(error.message || "Đăng ký thất bại.");
       } finally {
         el.registerBtn.disabled = false;
@@ -1967,7 +2165,7 @@
       try {
         el.submitForgotPasswordBtn.disabled = true;
         el.submitForgotPasswordBtn.textContent = "Đang cập nhật mật khẩu";
-        await apiRequest("/api/forgot-password", {
+        await apiRequest("/api/auth/forgot-password", {
           method: "POST",
           body: JSON.stringify({
             email,
@@ -1976,7 +2174,6 @@
           })
         });
 
-        setLoginError("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.");
         el.loginUsername.value = email;
         el.loginPassword.value = "";
         el.forgotEmail.value = "";
@@ -1984,7 +2181,10 @@
         el.forgotNewPassword.value = "";
         el.forgotConfirmPassword.value = "";
         setForgotPasswordMode(false);
+        showToast("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.");
+        setLoginError("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.");
       } catch (error) {
+        showToast(error.message || "Không thể đặt lại mật khẩu.", "error");
         setLoginError(error.message || "Không thể đặt lại mật khẩu.");
       } finally {
         el.submitForgotPasswordBtn.disabled = false;
@@ -1997,7 +2197,7 @@
       if (value === null) return;
       const amount = Number(value);
       if (!amount || amount <= 0) {
-        alert("Số tiền nộp không hợp lệ.");
+        showToast("Số tiền nộp không hợp lệ.", "error");
         return;
       }
 
@@ -2006,11 +2206,11 @@
           method: "POST",
           body: JSON.stringify({ amount })
         });
-        alert("Đã tạo yêu cầu nạp tiền thành công.");
+        showToast("Đã tạo yêu cầu nạp tiền thành công.");
         await fetchAllClientData();
         switchPage("transactions");
       } catch (error) {
-        alert(error.message || "Không thể tạo yêu cầu nạp tiền.");
+        showToast(error.message || "Không thể tạo yêu cầu nạp tiền.", "error");
       }
     }
 
@@ -2019,7 +2219,7 @@
       if (value === null) return;
       const amount = Number(value);
       if (!amount || amount <= 0) {
-        alert("Số tiền rút không hợp lệ.");
+        showToast("Số tiền rút không hợp lệ.", "error");
         return;
       }
 
@@ -2028,11 +2228,11 @@
           method: "POST",
           body: JSON.stringify({ amount })
         });
-        alert("Đã tạo yêu cầu rút tiền thành công.");
+        showToast("Đã tạo yêu cầu rút tiền thành công.");
         await fetchAllClientData();
         switchPage("transactions");
       } catch (error) {
-        alert(error.message || "Không thể tạo yêu cầu rút tiền.");
+        showToast(error.message || "Không thể tạo yêu cầu rút tiền.", "error");
       }
     }
 
@@ -2041,12 +2241,12 @@
       const amount = Number(el.transferAmount.value);
 
       if (!toAccountNumber) {
-        alert("Vui lòng nhập số tài khoản nhận.");
+        showToast("Vui lòng nhập số tài khoản nhận.", "error");
         el.transferToAccountNumber.focus();
         return;
       }
       if (!amount || amount <= 0) {
-        alert("Số tiền chuyển không hợp lệ.");
+        showToast("Số tiền chuyển không hợp lệ.", "error");
         el.transferAmount.focus();
         return;
       }
@@ -2061,14 +2261,14 @@
             amount
           })
         });
-        alert("Chuyển khoản thành công.");
+        showToast("Chuyển khoản thành công.");
         el.transferToAccountNumber.value = "";
         el.transferAmount.value = "";
         el.transferNote.value = "";
         await fetchAllClientData();
         switchPage("transactions");
       } catch (error) {
-        alert(error.message || "Không thể chuyển khoản.");
+        showToast(error.message || "Không thể chuyển khoản.", "error");
       } finally {
         el.transferBtn.disabled = false;
         el.transferBtn.textContent = "Chuyển khoản";
@@ -2079,11 +2279,11 @@
       const productId = Number(el.openSavingsProduct.value);
       const amount = Number(el.openSavingsAmount.value);
       if (!productId) {
-        alert("Vui lòng chọn gói tiết kiệm.");
+        showToast("Vui lòng chọn gói tiết kiệm.", "error");
         return;
       }
       if (!amount || amount <= 0) {
-        alert("Vui lòng nhập số tiền gửi hợp lệ.");
+        showToast("Vui lòng nhập số tiền gửi hợp lệ.", "error");
         return;
       }
 
@@ -2094,11 +2294,12 @@
           method: "POST",
           body: JSON.stringify({ product_id: productId, amount })
         });
-        alert("Mở sổ tiết kiệm thành công.");
+        showToast("Đã tạo yêu cầu mở sổ tiết kiệm, vui lòng chờ nhân viên duyệt.");
         el.openSavingsAmount.value = "";
         await fetchAllClientData();
+        switchPage("transactions");
       } catch (error) {
-        alert(error.message || "Không thể tạo yêu cầu mở sổ.");
+        showToast(error.message || "Không thể tạo yêu cầu mở sổ.", "error");
       } finally {
         el.openSavingsBtn.disabled = false;
         el.openSavingsBtn.textContent = "Mở sổ tiết kiệm";
@@ -2113,11 +2314,55 @@
         await apiRequest(`/api/client/close-savings/${accountId}`, {
           method: "POST"
         });
-        alert("Đã tạo yêu cầu tất toán, vui lòng chờ duyệt.");
+        showToast("Đã tạo yêu cầu tất toán, vui lòng chờ duyệt.");
         await fetchAllClientData();
         switchPage("transactions");
       } catch (error) {
-        alert(error.message || "Không thể tạo yêu cầu tất toán.");
+        showToast(error.message || "Không thể tạo yêu cầu tất toán.", "error");
+      }
+    }
+
+    async function handleSavingsDepositRequest(accountId) {
+      const value = prompt(`Nhập số tiền muốn gửi thêm vào sổ #${accountId}:`, "100000");
+      if (value === null) return;
+      const amount = Number(value);
+      if (!amount || amount <= 0) {
+        showToast("Số tiền gửi thêm không hợp lệ.", "error");
+        return;
+      }
+
+      try {
+        await apiRequest(`/api/client/savings-accounts/${accountId}/deposit-requests`, {
+          method: "POST",
+          body: JSON.stringify({ amount })
+        });
+        showToast("Đã tạo yêu cầu gửi thêm vào sổ, vui lòng chờ duyệt.");
+        await fetchAllClientData();
+        switchPage("transactions");
+      } catch (error) {
+        showToast(error.message || "Không thể tạo yêu cầu gửi thêm.", "error");
+      }
+    }
+
+    async function handleSavingsWithdrawRequest(accountId) {
+      const value = prompt(`Nhập số tiền muốn rút từ sổ không kỳ hạn #${accountId}:`, "100000");
+      if (value === null) return;
+      const amount = Number(value);
+      if (!amount || amount <= 0) {
+        showToast("Số tiền rút không hợp lệ.", "error");
+        return;
+      }
+
+      try {
+        await apiRequest(`/api/client/savings-accounts/${accountId}/withdraw-requests`, {
+          method: "POST",
+          body: JSON.stringify({ amount })
+        });
+        showToast("Đã tạo yêu cầu rút tiền từ sổ, vui lòng chờ duyệt.");
+        await fetchAllClientData();
+        switchPage("transactions");
+      } catch (error) {
+        showToast(error.message || "Không thể tạo yêu cầu rút tiền từ sổ.", "error");
       }
     }
 
@@ -2135,18 +2380,28 @@
         el.loginBtn.disabled = true;
         el.loginBtn.textContent = "Đang đăng nhập";
 
-        const res = await apiRequest("/api/login", {
+        const res = await apiRequest("/api/auth/login", {
           method: "POST",
           body: JSON.stringify({ email: username, password })
         });
 
         const token = res.token || res.access_token;
         if (!token) throw new Error("Server không trả về token đăng nhập.");
+        if (res.role !== "CUSTOMER") {
+          sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ khách hàng.");
+          window.location.replace(roleHome(res.role));
+          return;
+        }
 
         appState.token = token;
+        appState.role = res.role || "CUSTOMER";
         appState.username = username;
+        localStorage.setItem("token", token);
+        localStorage.setItem("role", appState.role);
+        localStorage.setItem("username", username);
         localStorage.setItem("client_token", token);
         localStorage.setItem("client_username", username);
+        showToast("Đăng nhập khách hàng thành công.");
 
         updateAuthView();
         await fetchAllClientData();
@@ -2159,7 +2414,11 @@
     }
 
     function handleLogout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
       localStorage.removeItem("client_token");
+      localStorage.removeItem("client_username");
       appState.token = "";
       appState.me = null;
       appState.dashboard = null;
@@ -2167,7 +2426,7 @@
       appState.accounts = [];
       appState.transactions = [];
       appState.currentPage = "home";
-      updateAuthView();
+      window.location.replace("/login");
     }
 
     function bindEvents() {
@@ -2235,9 +2494,23 @@
     }
 
     async function init() {
+      if (!appState.token) {
+        window.location.replace("/login");
+        return;
+      }
+      if (appState.role !== "CUSTOMER") {
+        sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ khách hàng.");
+        window.location.replace(roleHome(appState.role));
+        return;
+      }
       bindEvents();
       renderServices();
       updateAuthView();
+      const flash = sessionStorage.getItem("flash_message");
+      if (flash) {
+        showToast(flash, "error");
+        sessionStorage.removeItem("flash_message");
+      }
       if (appState.token) {
         try {
           await fetchAllClientData();

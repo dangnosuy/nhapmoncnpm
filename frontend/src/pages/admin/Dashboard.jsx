@@ -1,13 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../api/axios';
-
-const CARD_STYLE = {
-  background: '#fff',
-  borderRadius: 10,
-  padding: '20px 24px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-  flex: '1 1 220px',
-};
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
@@ -21,31 +13,41 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p>Đang tải...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (loading) return <div className="ds-panel ds-loading">Đang tải dashboard...</div>;
+  if (error) return <div className="ds-alert ds-alert-error">{error}</div>;
 
   const cards = [
-    { label: 'Khách hàng', value: data.total_customers, color: '#1890ff' },
-    { label: 'Nhân viên', value: data.total_staff, color: '#52c41a' },
-    { label: 'Admin', value: data.total_admins, color: '#722ed1' },
-    { label: 'Sổ TK đang hoạt động', value: data.active_savings_accounts, color: '#13c2c2' },
-    { label: 'Tổng tiền gửi (VND)', value: data.total_savings_amount?.toLocaleString('vi-VN'), color: '#fa8c16' },
-    { label: 'Giao dịch chờ duyệt', value: data.pending_transactions, color: '#f5222d' },
-    { label: 'Gói TK hoạt động', value: data.active_products, color: '#2f54eb' },
-    { label: 'Tài khoản bị khóa', value: data.locked_accounts, color: '#eb2f96' },
+    { label: 'Khách hàng', value: data.total_customers },
+    { label: 'Nhân viên', value: data.total_staff },
+    { label: 'Admin', value: data.total_admins },
+    { label: 'Sổ hoạt động', value: data.active_savings_accounts },
+    { label: 'Tổng tiền gửi', value: `${Number(data.total_savings_amount || 0).toLocaleString('vi-VN')} VND` },
+    { label: 'Chờ duyệt', value: data.pending_transactions },
+    { label: 'Gói đang bật', value: data.active_products },
+    { label: 'Tài khoản khóa', value: data.locked_accounts },
   ];
 
   return (
     <div>
-      <h2 style={{ marginTop: 0, marginBottom: 24 }}>Dashboard - Tổng quan</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        {cards.map((c) => (
-          <div key={c.label} style={CARD_STYLE}>
-            <div style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>{c.label}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: c.color }}>{c.value}</div>
-          </div>
+      <header className="ds-page-head">
+        <div>
+          <h2>Dashboard tổng quan</h2>
+          <p className="ds-kicker">Ảnh chụp vận hành hệ thống tiết kiệm tại thời điểm hiện tại</p>
+        </div>
+      </header>
+
+      <section className="ds-grid">
+        {cards.map((card, index) => (
+          <article
+            className="ds-card ds-metric"
+            key={card.label}
+            style={{ background: index % 3 === 0 ? '#fff' : index % 3 === 1 ? '#fef3c7' : '#fee2e2' }}
+          >
+            <span>{card.label}</span>
+            <strong>{card.value}</strong>
+          </article>
         ))}
-      </div>
+      </section>
     </div>
   );
 }

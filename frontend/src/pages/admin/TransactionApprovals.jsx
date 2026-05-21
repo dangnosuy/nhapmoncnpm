@@ -1,36 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../api/axios';
 
-const inputStyle = {
-  padding: '8px 12px',
-  border: '1px solid #d9d9d9',
-  borderRadius: 6,
-  fontSize: 14,
-  boxSizing: 'border-box',
-};
-
-const btnStyle = (bg, disabled = false) => ({
-  padding: '6px 12px',
-  background: disabled ? '#d9d9d9' : bg,
-  color: '#fff',
-  border: 'none',
-  borderRadius: 6,
-  cursor: disabled ? 'not-allowed' : 'pointer',
-  fontSize: 13,
-});
-
 const typeMap = {
   DEPOSIT_TO_WALLET: 'Nạp tiền ví',
   WITHDRAW_FROM_WALLET: 'Rút tiền ví',
   OPEN_SAVINGS: 'Mở sổ tiết kiệm',
-  CLOSE_SAVINGS: 'Tất toán sổ tiết kiệm',
+  DEPOSIT_TO_SAVINGS: 'Gửi thêm vào sổ',
+  WITHDRAW_FROM_SAVINGS: 'Rút tiền từ sổ',
+  CLOSE_SAVINGS: 'Tất toán sổ',
 };
 
 export default function TransactionApprovals() {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('PENDING');
-  const [typeFilter, setTypeFilter] = useState('DEPOSIT_TO_WALLET');
+  const [typeFilter, setTypeFilter] = useState('');
   const [processingId, setProcessingId] = useState(null);
   const [msg, setMsg] = useState('');
 
@@ -40,6 +24,7 @@ export default function TransactionApprovals() {
     try {
       const params = {};
       if (statusFilter) params.status = statusFilter;
+      if (typeFilter) params.transaction_type = typeFilter;
       const res = await api.get('/transactions', { params });
       setTransactions(res.data.transactions || []);
     } catch (err) {
@@ -47,19 +32,14 @@ export default function TransactionApprovals() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, typeFilter]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  const filteredTransactions = useMemo(
-    () => transactions.filter((t) => !typeFilter || t.transaction_type === typeFilter),
-    [transactions, typeFilter]
-  );
-
   const pendingCount = useMemo(
-    () => transactions.filter((t) => t.status === 'PENDING' && t.transaction_type === 'DEPOSIT_TO_WALLET').length,
+    () => transactions.filter((t) => t.status === 'PENDING').length,
     [transactions]
   );
 
@@ -71,7 +51,9 @@ export default function TransactionApprovals() {
     setProcessingId(transactionId);
     setMsg('');
     try {
-      await api.put(`/transactions/${transactionId}/${action}`);
+      await api.patch(`/transactions/${transactionId}`, {
+        status: action === 'approve' ? 'APPROVED' : 'REJECTED',
+      });
       setMsg(`${action === 'approve' ? 'Duyệt' : 'Từ chối'} giao dịch thành công.`);
       await fetchTransactions();
     } catch (err) {
@@ -83,110 +65,84 @@ export default function TransactionApprovals() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <header className="ds-page-head">
         <div>
-          <h2 style={{ margin: 0 }}>Duyệt giao dịch</h2>
-          <div style={{ marginTop: 6, color: '#666', fontSize: 13 }}>
-            Yêu cầu nạp tiền vào ví đang chờ duyệt: <strong>{pendingCount}</strong>
-          </div>
+          <h2>Duyệt giao dịch</h2>
+          <p className="ds-kicker">Maker-checker queue / đang chờ: {pendingCount}</p>
         </div>
-        <button onClick={fetchTransactions} style={btnStyle('#1890ff', loading)}>
-          {loading ? 'Đang tải...' : 'Làm mới'}
+        <button className="ds-btn ds-btn-secondary" onClick={fetchTransactions} disabled={loading}>
+          {loading ? 'Đang tải' : 'Làm mới'}
         </button>
-      </div>
+      </header>
 
       {msg && (
-        <div
-          style={{
-            padding: '10px 12px',
-            marginBottom: 12,
-            borderRadius: 6,
-            background: msg.toLowerCase().includes('thành công') ? '#f6ffed' : '#fff2f0',
-            border: msg.toLowerCase().includes('thành công') ? '1px solid #b7eb8f' : '1px solid #ffccc7',
-            color: msg.toLowerCase().includes('thành công') ? '#389e0d' : '#cf1322',
-            fontSize: 14,
-          }}
-        >
+        <div className={`ds-alert ${msg.toLowerCase().includes('thành công') ? 'ds-alert-success' : 'ds-alert-error'}`}>
           {msg}
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
-        <select style={inputStyle} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+      <div className="ds-toolbar">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Lọc trạng thái">
           <option value="">Tất cả trạng thái</option>
           <option value="PENDING">PENDING</option>
           <option value="APPROVED">APPROVED</option>
           <option value="REJECTED">REJECTED</option>
         </select>
 
-        <select style={inputStyle} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Lọc loại giao dịch">
           <option value="">Tất cả loại giao dịch</option>
-          <option value="DEPOSIT_TO_WALLET">Nạp tiền ví</option>
-          <option value="WITHDRAW_FROM_WALLET">Rút tiền ví</option>
-          <option value="OPEN_SAVINGS">Mở sổ tiết kiệm</option>
-          <option value="CLOSE_SAVINGS">Tất toán sổ</option>
+          {Object.entries(typeMap).map(([key, label]) => (
+            <option value={key} key={key}>{label}</option>
+          ))}
         </select>
       </div>
 
-      <div style={{ background: '#fff', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+      <div className="ds-panel">
+        <table>
           <thead>
-            <tr style={{ background: '#fafafa', textAlign: 'left' }}>
-              <th style={{ padding: '12px 16px' }}>Mã GD</th>
-              <th style={{ padding: '12px 16px' }}>Khách hàng</th>
-              <th style={{ padding: '12px 16px' }}>Số tiền</th>
-              <th style={{ padding: '12px 16px' }}>Loại giao dịch</th>
-              <th style={{ padding: '12px 16px' }}>Trạng thái</th>
-              <th style={{ padding: '12px 16px' }}>Thời gian tạo</th>
-              <th style={{ padding: '12px 16px' }}>Hành động</th>
+            <tr>
+              <th>Mã GD</th>
+              <th>Khách hàng</th>
+              <th>Sổ/Gói</th>
+              <th>Số tiền</th>
+              <th>Lãi</th>
+              <th>Loại giao dịch</th>
+              <th>Trạng thái</th>
+              <th>Thời gian tạo</th>
+              <th>Hành động</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} style={{ padding: 20, textAlign: 'center' }}>Đang tải dữ liệu...</td>
-              </tr>
-            ) : filteredTransactions.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding: 20, textAlign: 'center', color: '#999' }}>Không có giao dịch phù hợp.</td>
-              </tr>
+              <tr><td colSpan={9} className="ds-loading">Đang tải dữ liệu...</td></tr>
+            ) : transactions.length === 0 ? (
+              <tr><td colSpan={9} className="ds-empty">Không có giao dịch phù hợp.</td></tr>
             ) : (
-              filteredTransactions.map((t) => {
+              transactions.map((t) => {
                 const isPending = t.status === 'PENDING';
                 const isRowProcessing = processingId === t.transaction_id;
 
                 return (
-                  <tr key={t.transaction_id} style={{ borderTop: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '10px 16px', fontWeight: 600 }}>#{t.transaction_id}</td>
-                    <td style={{ padding: '10px 16px' }}>{t.customer_name}</td>
-                    <td style={{ padding: '10px 16px' }}>{Number(t.amount || 0).toLocaleString('vi-VN')} VND</td>
-                    <td style={{ padding: '10px 16px' }}>{typeMap[t.transaction_type] || t.transaction_type}</td>
-                    <td style={{ padding: '10px 16px' }}>
-                      <span
-                        style={{
-                          padding: '2px 10px',
-                          borderRadius: 12,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          background: t.status === 'APPROVED' ? '#f6ffed' : t.status === 'REJECTED' ? '#fff2f0' : '#fffbe6',
-                          color: t.status === 'APPROVED' ? '#389e0d' : t.status === 'REJECTED' ? '#cf1322' : '#d48806',
-                        }}
-                      >
-                        {t.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 16px' }}>{t.created_at}</td>
-                    <td style={{ padding: '10px 16px' }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                  <tr key={t.transaction_id}>
+                    <td><strong>#{t.transaction_id}</strong></td>
+                    <td>{t.customer_name}</td>
+                    <td>{t.account_id ? `Sổ #${t.account_id}` : t.target_product_name || '-'}</td>
+                    <td>{Number(t.amount || 0).toLocaleString('vi-VN')} VND</td>
+                    <td>{Number(t.interest_amount || 0).toLocaleString('vi-VN')} VND</td>
+                    <td>{typeMap[t.transaction_type] || t.transaction_type}</td>
+                    <td><span className={`ds-status ${t.status}`}>{t.status}</span></td>
+                    <td>{t.created_at}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         <button
-                          style={btnStyle('#52c41a', !isPending || isRowProcessing)}
+                          className="ds-btn ds-btn-success"
                           disabled={!isPending || isRowProcessing}
                           onClick={() => handleAction(t.transaction_id, 'approve')}
                         >
                           Duyệt
                         </button>
                         <button
-                          style={btnStyle('#f5222d', !isPending || isRowProcessing)}
+                          className="ds-btn ds-btn-danger"
                           disabled={!isPending || isRowProcessing}
                           onClick={() => handleAction(t.transaction_id, 'reject')}
                         >

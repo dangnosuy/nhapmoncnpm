@@ -5,13 +5,15 @@ from staff.staff import transactions_bp
 from admin.admin import admin_bp
 from client.client import client_bp
 from common.db import db_cursor, db_conn
+from common.savings_rules import ensure_default_configs
 from werkzeug.security import generate_password_hash
 import random
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-app.config['SECRET_KEY'] = 'mot_chuoi_bi_mat_rat_dai_va_kho_doan'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'mot_chuoi_bi_mat_rat_dai_va_kho_doan')
 
 
 def _generate_unique_account_number():
@@ -42,9 +44,31 @@ def ensure_account_number_schema():
     db_conn.commit()
 
 
+def ensure_transaction_schema():
+    db_cursor.execute("SHOW COLUMNS FROM transactions LIKE 'transaction_type'")
+    transaction_type_column = db_cursor.fetchone()
+    if transaction_type_column:
+        db_cursor.execute(
+            """
+            ALTER TABLE transactions MODIFY transaction_type
+            ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS',
+                 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') NOT NULL
+            """
+        )
+
+    db_cursor.execute("SHOW COLUMNS FROM transactions LIKE 'interest_amount'")
+    has_interest = db_cursor.fetchone()
+    if not has_interest:
+        db_cursor.execute(
+            "ALTER TABLE transactions ADD COLUMN interest_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00 AFTER status"
+        )
+
+    db_conn.commit()
+
+
 def ensure_default_admin_account():
-    default_admin_email = "admin@gmail.com"
-    default_admin_password = "admin123"
+    default_admin_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@gmail.com")
+    default_admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
     default_admin_name = "System Admin"
     default_admin_identity_card = "ADMIN000001"
 
@@ -111,6 +135,72 @@ def ensure_default_admin_account():
     db_conn.commit()
 
 
+def ensure_default_staff_account():
+    default_staff_email = os.getenv("DEFAULT_STAFF_EMAIL", "staff@gmail.com")
+    default_staff_password = os.getenv("DEFAULT_STAFF_PASSWORD", "staff123")
+    default_staff_name = "Default Staff"
+    default_staff_identity_card = "STAFF000001"
+
+    db_cursor.execute(
+        "SELECT user_id FROM users WHERE email = %s",
+        (default_staff_email,)
+    )
+    staff = db_cursor.fetchone()
+    password_hash = generate_password_hash(default_staff_password, method='pbkdf2:sha256')
+
+    if staff:
+        db_cursor.execute(
+            """
+            UPDATE users
+            SET password_hash = %s, role = 'STAFF', status = 'ACTIVE'
+            WHERE user_id = %s
+            """,
+            (password_hash, staff[0])
+        )
+    else:
+        db_cursor.execute(
+            """
+            SELECT user_id
+            FROM users
+            WHERE identity_card = %s
+            LIMIT 1
+            """,
+            (default_staff_identity_card,)
+        )
+        existing_staff = db_cursor.fetchone()
+        if existing_staff:
+            db_cursor.execute(
+                """
+                UPDATE users
+                SET email = %s,
+                    password_hash = %s,
+                    full_name = %s,
+                    identity_card = %s,
+                    role = 'STAFF',
+                    status = 'ACTIVE'
+                WHERE user_id = %s
+                """,
+                (
+                    default_staff_email,
+                    password_hash,
+                    default_staff_name,
+                    default_staff_identity_card,
+                    existing_staff[0]
+                )
+            )
+        else:
+            account_number = _generate_unique_account_number()
+            db_cursor.execute(
+                """
+                INSERT INTO users (email, password_hash, full_name, identity_card, role, status, account_number)
+                VALUES (%s, %s, %s, %s, 'STAFF', 'ACTIVE', %s)
+                """,
+                (default_staff_email, password_hash, default_staff_name, default_staff_identity_card, account_number)
+            )
+
+    db_conn.commit()
+
+
 def ensure_default_savings_products():
     db_cursor.execute("SELECT COUNT(*) FROM savings_products")
     total_products = int(db_cursor.fetchone()[0] or 0)
@@ -118,10 +208,9 @@ def ensure_default_savings_products():
         return
 
     default_products = [
-        ("Không kỳ hạn", 0, 0.20, 0, "Rút linh hoạt, lãi suất thấp."),
-        ("Tiết kiệm 3 tháng", 3, 4.80, 30, "Phù hợp mục tiêu ngắn hạn."),
-        ("Tiết kiệm 6 tháng", 6, 5.60, 60, "Lãi suất tốt cho mục tiêu trung hạn."),
-        ("Tiết kiệm 12 tháng", 12, 6.40, 90, "Lãi suất cao cho mục tiêu dài hạn."),
+        ("Không kỳ hạn", 0, 0.50, 15, "Rút linh hoạt sau thời gian giữ tối thiểu."),
+        ("Tiết kiệm 3 tháng", 3, 5.00, 90, "Kỳ hạn 3 tháng theo quy định đề tài."),
+        ("Tiết kiệm 6 tháng", 6, 5.50, 180, "Kỳ hạn 6 tháng theo quy định đề tài."),
     ]
 
     db_cursor.executemany(
@@ -133,6 +222,11 @@ def ensure_default_savings_products():
     )
     db_conn.commit()
 
+
+def ensure_system_configs():
+    ensure_default_configs(db_cursor)
+    db_conn.commit()
+
 # Đăng ký các Blueprint
 app.register_blueprint(auth_bp)
 app.register_blueprint(transactions_bp)
@@ -140,8 +234,11 @@ app.register_blueprint(admin_bp)
 app.register_blueprint(client_bp)
 
 ensure_account_number_schema()
+ensure_transaction_schema()
 ensure_default_admin_account()
+ensure_default_staff_account()
 ensure_default_savings_products()
+ensure_system_configs()
 
 
 @app.route('/api/ping', methods=['GET'])

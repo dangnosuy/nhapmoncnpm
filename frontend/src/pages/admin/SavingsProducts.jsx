@@ -60,7 +60,7 @@ export default function SavingsProducts() {
 
   const handleUpdate = async (productId) => {
     try {
-      await api.put(`/admin/savings-products/${productId}`, {
+      await api.patch(`/admin/savings-products/${productId}`, {
         ...editForm,
         term_months: Number(editForm.term_months),
         interest_rate: Number(editForm.interest_rate),
@@ -75,7 +75,8 @@ export default function SavingsProducts() {
 
   const handleToggle = async (productId) => {
     try {
-      await api.put(`/admin/savings-products/${productId}/toggle`);
+      const product = products.find((item) => item.product_id === productId);
+      await api.patch(`/admin/savings-products/${productId}`, { is_active: !product?.is_active });
       fetchProducts();
     } catch (err) {
       alert(err.response?.data?.message || 'Lỗi!');

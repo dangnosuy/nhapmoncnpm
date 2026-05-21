@@ -1,86 +1,68 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { to: '/admin', label: 'Dashboard', icon: '📊' },
-  { to: '/admin/users', label: 'Quản lý Nhân sự', icon: '👥' },
-  { to: '/admin/transactions', label: 'Duyệt giao dịch', icon: '✅' },
-  { to: '/admin/savings-products', label: 'Gói Tiết kiệm', icon: '💰' },
-  { to: '/admin/configs', label: 'Tham số Hệ thống', icon: '⚙️' },
+  { to: '/admin', label: 'Dashboard', code: 'DB' },
+  { to: '/admin/users', label: 'Nhân sự', code: 'US' },
+  { to: '/admin/transactions', label: 'Duyệt giao dịch', code: 'TX' },
+  { to: '/admin/savings-products', label: 'Gói tiết kiệm', code: 'SP' },
+  { to: '/admin/configs', label: 'Tham số', code: 'CF' },
+  { to: '/admin/reports', label: 'Báo cáo BM5', code: 'RP' },
 ];
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    const flash = sessionStorage.getItem('flash_message');
+    if (!flash) return;
+    setToast(flash);
+    sessionStorage.removeItem('flash_message');
+    const timer = window.setTimeout(() => setToast(null), 6000);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('username');
     navigate('/login');
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      {/* Sidebar */}
-      <aside style={{
-        width: 250,
-        background: '#1a1a2e',
-        color: '#fff',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
-        <div style={{
-          padding: '24px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          textAlign: 'center',
-        }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>Smart Savings</h2>
-          <span style={{ fontSize: 12, opacity: 0.7 }}>Admin Panel</span>
+    <div className="ds-app">
+      {toast && <div className="ds-toast error" role="status">{toast}</div>}
+      <aside className="ds-sidebar">
+        <div className="ds-brand">
+          <h1>QUẢN LÝ SỔ TIẾT KIỆM</h1>
+          <span>ADMIN CONTROL ROOM</span>
         </div>
 
-        <nav style={{ flex: 1, padding: '12px 0' }}>
+        <nav className="ds-nav" aria-label="Admin navigation">
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/admin'}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '12px 20px',
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.6)',
-                background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
-                textDecoration: 'none',
-                fontSize: 14,
-                borderLeft: isActive ? '3px solid #4fc3f7' : '3px solid transparent',
-                transition: 'all 0.2s',
-              })}
+              className={({ isActive }) => `ds-nav-link${isActive ? ' active' : ''}`}
             >
-              <span>{item.icon}</span>
+              <span className="ds-sidebar-meta">{item.code}</span>
               <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>
 
-        <button
-          onClick={handleLogout}
-          style={{
-            margin: '12px 20px 20px',
-            padding: '10px',
-            background: 'rgba(255,255,255,0.1)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontSize: 14,
-          }}
-        >
-          Đăng xuất
-        </button>
+        <div style={{ padding: 16 }}>
+          <button className="ds-btn ds-btn-secondary" style={{ width: '100%' }} onClick={handleLogout}>
+            Đăng xuất
+          </button>
+        </div>
       </aside>
 
-      {/* Main content */}
-      <main style={{ flex: 1, background: '#f0f2f5', overflow: 'auto' }}>
-        <div style={{ padding: 24 }}>
+      <main className="ds-main">
+        <div className="ds-content">
           <Outlet />
         </div>
       </main>

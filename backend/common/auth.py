@@ -15,6 +15,7 @@ def _generate_unique_account_number(cursor):
             return account_number
 
 
+@auth_bp.route('/api/auth/register', methods=['POST'])
 @auth_bp.route('/api/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -29,20 +30,23 @@ def register():
 
     hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
     account_number = _generate_unique_account_number(db_cursor)
+    welcome_bonus = 100000
 
     try:
-        sql = """INSERT INTO users (email, password_hash, full_name, identity_card, account_number)
-                 VALUES (%s, %s, %s, %s, %s)"""
-        db_cursor.execute(sql, (email, hashed_password, full_name, identity_card, account_number))
+        sql = """INSERT INTO users (email, password_hash, full_name, identity_card, account_number, wallet_balance)
+                 VALUES (%s, %s, %s, %s, %s, %s)"""
+        db_cursor.execute(sql, (email, hashed_password, full_name, identity_card, account_number, welcome_bonus))
         db_conn.commit()
         return jsonify({
-            'message': 'Đăng ký thành công!',
-            'account_number': account_number
+            'message': 'Đăng ký thành công! Tài khoản được tặng 100.000 VND.',
+            'account_number': account_number,
+            'welcome_bonus': welcome_bonus
         }), 201
     except Exception as e:
         return jsonify({'message': 'Email hoặc CMND/CCCD đã tồn tại!', 'error': str(e)}), 400
 
 
+@auth_bp.route('/api/auth/login', methods=['POST'])
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
     data     = request.get_json()
@@ -79,6 +83,7 @@ def login():
     return jsonify({'message': 'Sai mật khẩu!'}), 401
 
 
+@auth_bp.route('/api/auth/forgot-password', methods=['POST'])
 @auth_bp.route('/api/forgot-password', methods=['POST'])
 def forgot_password():
     data = request.get_json() or {}
