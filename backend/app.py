@@ -52,7 +52,8 @@ def ensure_transaction_schema():
             """
             ALTER TABLE transactions MODIFY transaction_type
             ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS',
-                 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') NOT NULL
+                 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS',
+                 'TRANSFER_OUT', 'TRANSFER_IN') NOT NULL
             """
         )
 
@@ -209,8 +210,8 @@ def ensure_default_savings_products():
 
     default_products = [
         ("Không kỳ hạn", 0, 0.50, 15, "Rút linh hoạt sau thời gian giữ tối thiểu."),
-        ("Tiết kiệm 3 tháng", 3, 5.00, 90, "Kỳ hạn 3 tháng theo quy định đề tài."),
-        ("Tiết kiệm 6 tháng", 6, 5.50, 180, "Kỳ hạn 6 tháng theo quy định đề tài."),
+        ("Tiết kiệm 3 phút", 3, 5.00, 0, "Kỳ hạn demo 3 phút để kiểm thử quy trình tất toán."),
+        ("Tiết kiệm 6 phút", 6, 5.50, 0, "Kỳ hạn demo 6 phút để kiểm thử quy trình tất toán."),
     ]
 
     db_cursor.executemany(

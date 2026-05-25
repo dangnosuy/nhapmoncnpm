@@ -38,8 +38,8 @@ CREATE TABLE users (
 -- ==========================================
 CREATE TABLE savings_products (
     product_id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL, -- Tên gói (VD: Không kỳ hạn, 3 tháng...)
-    term_months INT NOT NULL DEFAULT 0, -- 0 là Không kỳ hạn, số nguyên > 0 là kỳ hạn (tháng)
+    name VARCHAR(100) NOT NULL, -- Tên gói (VD: Không kỳ hạn, 3 phút demo...)
+    term_months INT NOT NULL DEFAULT 0, -- 0 là Không kỳ hạn, số nguyên > 0 là kỳ hạn demo theo phút
     interest_rate DECIMAL(5, 2) NOT NULL, -- Mức lãi suất (%/năm)
     min_days_hold INT DEFAULT 0, -- Ràng buộc: Số ngày tối thiểu phải giữ tiền
     is_active BOOLEAN DEFAULT TRUE,
@@ -71,7 +71,7 @@ CREATE TABLE transactions (
     target_product_id INT NULL, -- Gói tiết kiệm nhắm tới (Dùng khi chờ Staff duyệt)
     amount DECIMAL(15, 2) NOT NULL CHECK (amount > 0), -- Số tiền GD, chặn số âm
     
-    transaction_type ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') NOT NULL,
+    transaction_type ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS', 'TRANSFER_OUT', 'TRANSFER_IN') NOT NULL,
     status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING', -- Trạng thái duyệt
     interest_amount DECIMAL(15, 2) NOT NULL DEFAULT 0.00, -- Tiền lãi phát sinh khi rút/tất toán
     
@@ -86,6 +86,6 @@ CREATE TABLE transactions (
 );
 
 INSERT INTO system_configs (config_key, config_value, description) VALUES
-('MIN_OPEN_AMOUNT', '1000000', 'So tien toi thieu khi mo so tiet kiem'),
-('MIN_SAVINGS_DEPOSIT_AMOUNT', '100000', 'So tien toi thieu khi gui them vao so'),
+('MIN_OPEN_AMOUNT', '50000', 'So tien toi thieu khi mo so tiet kiem'),
+('MIN_SAVINGS_DEPOSIT_AMOUNT', '50000', 'So tien toi thieu khi gui them vao so'),
 ('NON_TERM_MIN_DAYS', '15', 'So ngay toi thieu de rut so khong ky han');

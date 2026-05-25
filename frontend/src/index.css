@@ -324,6 +324,43 @@ h2 {
   background: #fee2e2;
 }
 
+.ds-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.58);
+}
+
+.ds-modal {
+  width: min(520px, 100%);
+  background: var(--ds-surface);
+  border: 3px solid var(--ds-line);
+  box-shadow: 8px 8px 0 var(--ds-line);
+  padding: 24px;
+}
+
+.ds-modal h3 {
+  margin: 0 0 8px;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.ds-modal p {
+  margin: 0 0 18px;
+  color: var(--ds-muted);
+  font-weight: 700;
+}
+
+.ds-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .ds-status {
   display: inline-flex;
   align-items: center;

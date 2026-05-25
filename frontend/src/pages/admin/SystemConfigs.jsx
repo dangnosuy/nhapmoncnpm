@@ -25,6 +25,7 @@ export default function SystemConfigs() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [editKey, setEditKey] = useState(null);
+  const [pendingDeleteKey, setPendingDeleteKey] = useState(null);
   const [form, setForm] = useState({ config_key: '', config_value: '', description: '' });
   const [editForm, setEditForm] = useState({ config_value: '', description: '' });
   const [msg, setMsg] = useState('');
@@ -54,22 +55,26 @@ export default function SystemConfigs() {
   };
 
   const handleUpdate = async (key) => {
+    setMsg('');
     try {
       await api.patch(`/admin/configs/${key}`, editForm);
       setEditKey(null);
+      setMsg('Cập nhật tham số thành công!');
       fetchConfigs();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi!');
+      setMsg(err.response?.data?.message || 'Lỗi!');
     }
   };
 
   const handleDelete = async (key) => {
-    if (!confirm(`Bạn có chắc muốn xóa tham số "${key}"?`)) return;
+    setMsg('');
     try {
       await api.delete(`/admin/configs/${key}`);
+      setPendingDeleteKey(null);
+      setMsg('Xóa tham số thành công!');
       fetchConfigs();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi!');
+      setMsg(err.response?.data?.message || 'Lỗi!');
     }
   };
 
@@ -176,7 +181,7 @@ export default function SystemConfigs() {
                     <td style={{ padding: '10px 16px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button style={btnStyle('#1890ff')} onClick={() => startEdit(c)}>Sửa</button>
-                        <button style={btnStyle('#f5222d')} onClick={() => handleDelete(c.config_key)}>Xóa</button>
+                        <button style={btnStyle('#f5222d')} onClick={() => setPendingDeleteKey(c.config_key)}>Xóa</button>
                       </div>
                     </td>
                   </>
@@ -186,6 +191,19 @@ export default function SystemConfigs() {
           </tbody>
         </table>
       </div>
+
+      {pendingDeleteKey && (
+        <div className="ds-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ds-modal">
+            <h3>Xóa tham số</h3>
+            <p>Bạn đang xóa tham số "{pendingDeleteKey}". Thao tác này có thể ảnh hưởng quy định nghiệp vụ.</p>
+            <div className="ds-modal-actions">
+              <button className="ds-btn" onClick={() => setPendingDeleteKey(null)}>Hủy</button>
+              <button className="ds-btn ds-btn-danger" onClick={() => handleDelete(pendingDeleteKey)}>Xác nhận xóa</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

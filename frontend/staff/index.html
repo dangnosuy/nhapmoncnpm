@@ -90,6 +90,25 @@
     }
     .toast.success { background: #dcfce7; }
     .toast.error { background: #fee2e2; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(17, 24, 39, 0.58);
+    }
+    .modal {
+      width: min(520px, 100%);
+      background: #fff;
+      border: 3px solid var(--line);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .modal h2 { margin: 0 0 8px; font-size: 36px; line-height: .95; }
+    .modal p { margin: 0 0 18px; color: var(--muted); font-weight: 800; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
 
     .shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
     aside { background: #0b1220; color: #fff; padding: 22px 16px; border-right: 4px solid var(--line); }
@@ -218,8 +237,8 @@
             <label>Loại giao dịch</label>
             <select id="txType">
               <option value="">Tất cả</option>
-              <option value="DEPOSIT_TO_WALLET">Nạp ví</option>
-              <option value="WITHDRAW_FROM_WALLET">Rút ví</option>
+              <option value="TRANSFER_OUT">Chuyển khoản đi</option>
+              <option value="TRANSFER_IN">Chuyển khoản đến</option>
               <option value="OPEN_SAVINGS">Mở sổ</option>
               <option value="DEPOSIT_TO_SAVINGS">Gửi thêm vào sổ</option>
               <option value="WITHDRAW_FROM_SAVINGS">Rút từ sổ</option>
@@ -287,6 +306,17 @@
     </main>
   </section>
 
+  <div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h2>Xác nhận giao dịch</h2>
+      <p id="confirmModalText"></p>
+      <div class="modal-actions">
+        <button id="cancelConfirmBtn" class="ghost" type="button">Hủy</button>
+        <button id="submitConfirmBtn" class="primary" type="button">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = "http://127.0.0.1:5000";
     const ROLE_HOME = { ADMIN: "/admin", STAFF: "/staff/", CUSTOMER: "/client/" };
@@ -319,12 +349,13 @@
       customers: [],
       accounts: [],
       balance: null,
+      pendingAction: null,
       page: "dashboard"
     };
 
     const typeMap = {
-      DEPOSIT_TO_WALLET: "Nạp ví",
-      WITHDRAW_FROM_WALLET: "Rút ví",
+      TRANSFER_OUT: "Chuyển khoản đi",
+      TRANSFER_IN: "Chuyển khoản đến",
       OPEN_SAVINGS: "Mở sổ",
       DEPOSIT_TO_SAVINGS: "Gửi thêm vào sổ",
       WITHDRAW_FROM_SAVINGS: "Rút từ sổ",
@@ -361,7 +392,11 @@
       dailyDate: document.getElementById("dailyDate"),
       monthInput: document.getElementById("monthInput"),
       dailyBody: document.getElementById("dailyBody"),
-      monthlyBody: document.getElementById("monthlyBody")
+      monthlyBody: document.getElementById("monthlyBody"),
+      confirmModal: document.getElementById("confirmModal"),
+      confirmModalText: document.getElementById("confirmModalText"),
+      cancelConfirmBtn: document.getElementById("cancelConfirmBtn"),
+      submitConfirmBtn: document.getElementById("submitConfirmBtn")
     };
 
     function money(value) {
@@ -370,6 +405,11 @@
 
     function escapeHtml(value) {
       return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+    }
+
+    function termLabel(termMonths) {
+      const term = Number(termMonths || 0);
+      return term === 0 ? "Không kỳ hạn" : `${term} phút`;
     }
 
     async function api(path, options = {}) {
@@ -428,20 +468,12 @@
 
     function bindTransactionActions(root) {
       root.querySelectorAll("button[data-action]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
+        btn.addEventListener("click", () => {
           const id = btn.dataset.id;
           const action = btn.dataset.action;
-          if (!confirm(`${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch #${id}?`)) return;
-          try {
-            await api(`/api/transactions/${id}`, {
-              method: "PATCH",
-              body: JSON.stringify({ status: action === "approve" ? "APPROVED" : "REJECTED" })
-            });
-            showToast(`${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch thành công.`);
-            await loadAll();
-          } catch (error) {
-            showToast(error.message, "error");
-          }
+          state.pendingAction = { id, action };
+          el.confirmModalText.textContent = `${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch #${id}. Hệ thống sẽ cập nhật ví/sổ nếu giao dịch được duyệt.`;
+          el.confirmModal.classList.remove("hidden");
         });
       });
     }
@@ -483,7 +515,7 @@
           <td>${escapeHtml(account.product_name)}</td>
           <td>${money(account.principal_balance)}</td>
           <td>${escapeHtml(account.interest_rate)}%/năm</td>
-          <td>${Number(account.term_months || 0) === 0 ? "Không kỳ hạn" : `${escapeHtml(account.term_months)} tháng`}</td>
+          <td>${escapeHtml(termLabel(account.term_months))}</td>
           <td>${escapeHtml(account.opened_at)}</td>
           <td><span class="status ${account.status === "ACTIVE" ? "APPROVED" : "REJECTED"}">${escapeHtml(account.status)}</span></td>
         </tr>
@@ -586,6 +618,29 @@
     document.getElementById("loadTxBtn").addEventListener("click", async () => {
       await loadTransactions();
       renderTransactions();
+    });
+    el.cancelConfirmBtn.addEventListener("click", () => {
+      state.pendingAction = null;
+      el.confirmModal.classList.add("hidden");
+    });
+    el.submitConfirmBtn.addEventListener("click", async () => {
+      if (!state.pendingAction) return;
+      const { id, action } = state.pendingAction;
+      try {
+        el.submitConfirmBtn.disabled = true;
+        await api(`/api/transactions/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: action === "approve" ? "APPROVED" : "REJECTED" })
+        });
+        showToast(`${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch thành công.`);
+        state.pendingAction = null;
+        el.confirmModal.classList.add("hidden");
+        await loadAll();
+      } catch (error) {
+        showToast(error.message, "error");
+      } finally {
+        el.submitConfirmBtn.disabled = false;
+      }
     });
     document.getElementById("loadDailyBtn").addEventListener("click", loadDailyReport);
     document.getElementById("loadMonthlyBtn").addEventListener("click", loadMonthlyReport);

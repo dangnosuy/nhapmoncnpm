@@ -58,29 +58,34 @@ export default function UserManagement() {
   };
 
   const handleChangeRole = async (userId, newRole) => {
+    setMsg('');
     try {
       await api.patch(`/admin/users/${userId}`, { role: newRole });
+      setMsg('Cập nhật vai trò thành công!');
       fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi!');
+      setMsg(err.response?.data?.message || 'Lỗi!');
     }
   };
 
   const handleToggleStatus = async (userId, newStatus) => {
+    setMsg('');
     try {
       await api.patch(`/admin/users/${userId}`, { status: newStatus });
+      setMsg('Cập nhật trạng thái thành công!');
       fetchUsers();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi!');
+      setMsg(err.response?.data?.message || 'Lỗi!');
     }
   };
 
   const handleViewDetail = async (userId) => {
+    setMsg('');
     try {
       const res = await api.get(`/admin/users/${userId}`);
       setDetailUser(res.data.user);
     } catch {
-      alert('Không thể tải thông tin chi tiết!');
+      setMsg('Không thể tải thông tin chi tiết!');
     }
   };
 

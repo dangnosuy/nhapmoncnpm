@@ -6,7 +6,7 @@
   <title>Quản lý sổ tiết kiệm</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
     :root {
@@ -203,27 +203,8 @@
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 0;
     }
-
-    .brand-icon {
-      position: relative;
-      width: 42px;
-      height: 42px;
-    }
-
-    .brand-icon span {
-      position: absolute;
-      width: 13px;
-      height: 13px;
-      background: #ef4444;
-      border-radius: 4px;
-    }
-
-    .brand-icon span:nth-child(1) { left: 3px; top: 3px; transform: rotate(12deg); }
-    .brand-icon span:nth-child(2) { right: 3px; top: 3px; transform: rotate(-12deg); }
-    .brand-icon span:nth-child(3) { left: 3px; bottom: 3px; transform: rotate(-12deg); }
-    .brand-icon span:nth-child(4) { right: 3px; bottom: 3px; transform: rotate(12deg); }
 
     .brand-text {
       font-size: 34px;
@@ -474,12 +455,13 @@
       background: #f3f8ff;
     }
     .dashboard-wrap {
-      max-width: 1280px;
+      width: min(100%, 1580px);
+      max-width: none;
       margin: 0 auto;
-      padding: 24px;
+      padding: 32px;
       display: grid;
       grid-template-columns: 320px minmax(0, 1fr);
-      gap: 24px;
+      gap: 32px;
     }
 
     .sidebar-card,
@@ -498,13 +480,14 @@
     .sidebar-card {
       position: sticky;
       top: 24px;
+      min-height: calc(100vh - 48px);
       overflow: hidden;
       color: #0f172a;
       background: linear-gradient(165deg, #e0f2fe 0%, #dbeafe 52%, #bae6fd 100%);
       border: 1px solid #bfdbfe;
     }
 
-    .sidebar-inner { padding: 24px; }
+    .sidebar-inner { padding: 28px; }
     .sidebar-profile {
       margin-top: 28px;
       background: rgba(255,255,255,0.65);
@@ -555,7 +538,7 @@
     .hero {
       background: linear-gradient(115deg, #e0f2fe, #cdeeff 55%, #b9e6ff 100%);
       border-radius: 32px;
-      padding: 24px;
+      padding: 30px;
       box-shadow: var(--shadow);
       color: #0f172a;
     }
@@ -640,7 +623,7 @@
     .hero-grid {
       display: grid;
       grid-template-columns: 1.1fr 0.9fr;
-      gap: 16px;
+      gap: 22px;
     }
 
     .hero-balance,
@@ -649,7 +632,7 @@
       border: 1px solid #dbe4f0;
       backdrop-filter: blur(10px);
       border-radius: 28px;
-      padding: 22px;
+      padding: 26px;
       color: #0f172a;
     }
 
@@ -709,12 +692,12 @@
     .stat-box small { color: #6b7280; display: block; }
     .stat-box strong { display: block; margin-top: 6px; font-size: 16px; }
 
-    .content-grid { display: grid; gap: 24px; }
+    .content-grid { display: grid; gap: 32px; }
 
     .section-card {
       background: white;
       border-radius: 24px;
-      padding: 24px;
+      padding: 32px;
       border: 1px solid #e5eaf3;
       box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
     }
@@ -750,11 +733,11 @@
       gap: 16px;
     }
 
-    .quick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .service-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .quick-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .service-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
     .profile-grid,
     .products-grid,
-    .accounts-grid,
+    .accounts-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
     .promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
     .quick-tile,
@@ -764,7 +747,7 @@
     .profile-tile {
       background: #ffffff;
       border-radius: 26px;
-      padding: 18px;
+      padding: 22px;
     }
 
     .quick-tile {
@@ -772,6 +755,7 @@
       text-align: center;
       transition: 0.18s ease;
       border: 1px solid #dbe4f0;
+      min-height: 168px;
     }
 
     .quick-tile:hover,
@@ -1151,6 +1135,615 @@
       border-radius: 0 !important;
       font-weight: 900 !important;
     }
+
+    .action-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .action-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.54);
+    }
+
+    .action-dialog {
+      position: relative;
+      width: min(520px, 100%);
+      background: #fff;
+      border: 3px solid #111827;
+      box-shadow: 8px 8px 0 #111827;
+      padding: 28px;
+      color: #111827;
+    }
+
+    .action-dialog h2 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.05;
+    }
+
+    .action-dialog p {
+      margin: 0 0 18px;
+      color: #475569;
+      font-size: 16px;
+    }
+
+    .modal-field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .modal-field label {
+      font-size: 14px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .modal-field input {
+      height: 52px;
+      padding: 0 14px;
+      font-size: 18px;
+    }
+
+    .action-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .modal-btn {
+      min-width: 132px;
+      height: 46px;
+      border: 3px solid #111827;
+      box-shadow: 4px 4px 0 #111827;
+      background: #fff;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .modal-btn.primary {
+      background: #DD614C;
+      color: #fff;
+    }
+
+    /* Customer dashboard final spacing pass: align with Staff/Admin brutalist density while using wider screens. */
+    .dashboard-wrap {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 24px 32px;
+      gap: 32px;
+      grid-template-columns: 340px minmax(0, 1fr);
+    }
+
+    .brand {
+      gap: 0 !important;
+    }
+
+    .content-grid {
+      gap: 32px;
+      max-width: none;
+    }
+
+    .hero,
+    .section-card {
+      padding: 32px !important;
+    }
+
+    .hero-grid {
+      gap: 24px;
+      grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr);
+    }
+
+    .hero-balance,
+    .hero-profile {
+      padding: 28px;
+    }
+
+    .quick-grid {
+      grid-template-columns: repeat(3, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .quick-tile {
+      min-height: 168px;
+      padding: 24px 18px;
+    }
+
+    .products-grid,
+    .accounts-grid,
+    .profile-grid {
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+    }
+
+    @media (max-width: 1280px) {
+      .quick-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1100px) {
+      .dashboard-wrap {
+        width: 100%;
+        padding: 20px;
+      }
+
+      .hero-grid,
+      .quick-grid,
+      .products-grid,
+      .accounts-grid,
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Final client shell rewrite: match Staff/Admin brutalist workspace. */
+    html,
+    body {
+      width: 100%;
+      overflow-x: hidden;
+      font-family: 'Darker Grotesque', system-ui, sans-serif;
+      font-size: 18px;
+    }
+
+    .dashboard-page {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,.05) 1px, transparent 1px),
+        linear-gradient(rgba(17,24,39,.05) 1px, transparent 1px),
+        #f4f1ea;
+      background-size: 24px 24px;
+    }
+
+    .dashboard-wrap {
+      width: 100%;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      gap: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar-card {
+      position: sticky;
+      top: 0;
+      min-height: 100vh;
+      border: 0 !important;
+      border-right: 4px solid #111827 !important;
+      box-shadow: none !important;
+      background: #111827 !important;
+      color: #fff !important;
+      overflow: visible;
+    }
+
+    .sidebar-inner {
+      padding: 22px 16px;
+    }
+
+    .sidebar-card .brand {
+      padding: 8px 10px 20px;
+      border-bottom: 3px solid rgba(255,255,255,.9);
+    }
+
+    .brand-text {
+      color: inherit !important;
+      font-size: 30px;
+      line-height: .9;
+      letter-spacing: 0;
+    }
+
+    .sidebar-profile {
+      margin-top: 18px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      backdrop-filter: none;
+    }
+
+    .sidebar-profile-head {
+      display: none;
+    }
+
+    .sidebar-greeting {
+      color: #fff;
+      font-size: 30px;
+      line-height: .95;
+      font-weight: 900;
+    }
+
+    .sidebar-email {
+      color: rgba(255,255,255,.68);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      word-break: break-word;
+    }
+
+    .sidebar-nav {
+      margin-top: 18px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .sidebar-nav button,
+    .bottom-btn {
+      width: 100%;
+      min-height: 42px;
+      border: 2px solid transparent !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      color: rgba(255,255,255,.72) !important;
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 20px;
+      font-weight: 900 !important;
+      border-radius: 0 !important;
+    }
+
+    .sidebar-nav button.active,
+    .sidebar-nav button:hover {
+      color: #111827 !important;
+      background: #daa144 !important;
+      border-color: #fff !important;
+      transform: none;
+      box-shadow: none !important;
+    }
+
+    .logout-btn {
+      width: 100%;
+      height: 42px;
+      margin-top: 18px;
+      border: 2px solid rgba(255,255,255,.9) !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: rgba(255,255,255,.08) !important;
+      color: #fff !important;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .content-grid {
+      min-width: 0;
+      display: grid;
+      align-content: start;
+      gap: 16px;
+      padding: 24px;
+    }
+
+    .hero,
+    .section-card,
+    .account-tile,
+    .product-tile,
+    .profile-tile,
+    .transaction-item,
+    .quick-tile,
+    .loading-bar,
+    .notify-panel {
+      border: 3px solid #111827 !important;
+      border-radius: 0 !important;
+      box-shadow: 7px 7px 0 #111827 !important;
+      background: #fff !important;
+      color: #111827 !important;
+    }
+
+    .hero {
+      padding: 16px !important;
+    }
+
+    .hero-top {
+      margin-bottom: 12px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr);
+      gap: 14px;
+    }
+
+    .stats-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .hero-balance,
+    .hero-profile,
+    .stat-box {
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      background: #fff !important;
+      padding: 16px;
+    }
+
+    .hero-balance h3,
+    .hero-profile h3,
+    .section-head h2 {
+      color: #111827;
+      font-size: 34px;
+      line-height: .9;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .balance-value {
+      font-size: 44px;
+      line-height: .9;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .hero-profile-name {
+      font-size: 32px;
+      line-height: .95;
+      font-weight: 900;
+    }
+
+    .hero-account-number,
+    .mini-chip,
+    .chip,
+    .tx-status {
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      background: #fff7ed !important;
+      color: #111827 !important;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 900 !important;
+    }
+
+    .section-card {
+      padding: 18px !important;
+    }
+
+    .page-panel {
+      display: grid;
+      gap: 16px;
+    }
+
+    .page-panel.hidden {
+      display: none !important;
+    }
+
+    .home-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .quick-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .quick-tile {
+      min-height: 0;
+      padding: 14px;
+      text-align: left;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      column-gap: 12px;
+      align-items: center;
+    }
+
+    .quick-tile:hover,
+    .outline-btn:hover,
+    .login-btn:hover,
+    .modal-btn:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 4px 4px 0 #111827 !important;
+    }
+
+    .quick-tile .tile-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0;
+      border: 2px solid #111827;
+      border-radius: 0;
+      background: #daa144;
+      color: #111827;
+      box-shadow: 3px 3px 0 #111827;
+      grid-row: span 2;
+    }
+
+    .quick-tile strong {
+      font-size: 24px;
+      line-height: .9;
+      font-weight: 900;
+    }
+
+    .quick-tile small {
+      margin-top: 2px;
+      color: #526070;
+      font-size: 16px;
+      line-height: 1.05;
+    }
+
+    .products-grid,
+    .accounts-grid,
+    .profile-grid {
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .transfer-form-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-control,
+    input,
+    select {
+      min-height: 42px;
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      background: #fff !important;
+      color: #111827 !important;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .login-btn,
+    .outline-btn,
+    .modal-btn {
+      border: 2px solid #111827 !important;
+      border-radius: 0 !important;
+      box-shadow: 4px 4px 0 #111827 !important;
+      background: #dd614c !important;
+      color: #fff !important;
+      font-size: 20px !important;
+      font-weight: 900 !important;
+    }
+
+    .outline-btn {
+      width: auto;
+      background: #fff !important;
+      color: #6d28d9 !important;
+      height: 40px;
+      padding: 0 14px;
+    }
+
+    .transaction-item {
+      border-width: 2px !important;
+      box-shadow: 4px 4px 0 #111827 !important;
+      align-items: flex-start;
+    }
+
+    .bottom-nav {
+      display: none !important;
+    }
+
+    .mobile-top {
+      display: none !important;
+    }
+
+    @media (max-width: 1100px) {
+      .dashboard-wrap {
+        grid-template-columns: 1fr;
+        width: 100%;
+        padding: 0;
+      }
+
+      .sidebar-card {
+        display: block !important;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        min-height: 0;
+        border-right: 0 !important;
+        border-bottom: 4px solid #111827 !important;
+      }
+
+      .sidebar-inner {
+        padding: 10px 12px;
+      }
+
+      .sidebar-card .brand {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 0 10px;
+      }
+
+      .brand-text {
+        font-size: 26px;
+      }
+
+      .sidebar-greeting,
+      .sidebar-email {
+        display: none;
+      }
+
+      .sidebar-nav {
+        margin-top: 0;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(96px, 1fr));
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .sidebar-nav button {
+        min-height: 36px;
+        padding: 8px;
+        text-align: center;
+        font-size: 16px;
+        white-space: nowrap;
+      }
+
+      .logout-btn {
+        height: 34px;
+        margin-top: 8px;
+        font-size: 16px;
+      }
+
+      .content-grid {
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .hero-grid,
+      .home-preview-grid,
+      .transfer-form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero,
+      .section-card {
+        padding: 14px !important;
+      }
+
+      .quick-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 700px) {
+      .hero-top .brand {
+        display: none;
+      }
+
+      .hero-grid,
+      .stats-grid,
+      .quick-grid,
+      .products-grid,
+      .accounts-grid,
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .home-preview {
+        display: none;
+      }
+
+      .balance-value {
+        font-size: 34px;
+      }
+
+      .section-head {
+        align-items: stretch;
+      }
+
+      .section-head h2,
+      .hero-balance h3,
+      .hero-profile h3 {
+        font-size: 28px;
+      }
+
+      .transaction-item {
+        display: grid;
+        gap: 10px;
+      }
+
+      .transaction-right {
+        text-align: left;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1175,9 +1768,6 @@
       <div class="login-container">
         <div class="login-left">
           <div class="brand">
-            <div class="brand-icon">
-              <span></span><span></span><span></span><span></span>
-            </div>
             <div class="brand-text">Sổ tiết kiệm</div>
           </div>
           <h1>Nền tảng tiết kiệm số.</h1>
@@ -1200,7 +1790,6 @@
           <div class="login-card-main">
             <div class="mobile-top" style="justify-content: space-between; align-items: center; margin-bottom: 18px;">
               <div class="brand">
-                <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
                 <div class="brand-text">Sổ tiết kiệm</div>
               </div>
               <div style="display:flex; gap:10px;">
@@ -1209,7 +1798,7 @@
               </div>
             </div>
 
-            <div class="login-avatar"><i class="fa-solid fa-qrcode"></i></div>
+            <div class="login-avatar"><i class="fa-solid fa-piggy-bank"></i></div>
             <div class="login-title-sub">Xin chào,</div>
             <div class="login-title-main">Quý khách</div>
 
@@ -1294,12 +1883,6 @@
 
             <button id="loginBtn" class="login-btn" type="button">Đăng nhập</button>
           </div>
-
-          <div class="login-card-footer">
-            <div class="footer-action"><i class="fa-solid fa-qrcode"></i>Quét QR</div>
-            <div class="footer-action"><i class="fa-solid fa-shield-halved"></i>Xác thực D-OTP</div>
-            <div class="footer-action"><i class="fa-regular fa-star"></i>Thay ảnh nền</div>
-          </div>
         </div>
       </div>
     </section>
@@ -1309,14 +1892,13 @@
         <aside class="sidebar-card">
           <div class="sidebar-inner">
             <div class="brand">
-              <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
               <div class="brand-text">Sổ tiết kiệm</div>
             </div>
 
             <div class="sidebar-profile">
               <div class="sidebar-profile-head">
                 <i class="fa-solid fa-shield-halved"></i>
-                <div class="circle-icon" style="width:40px;height:40px;background:rgba(255,255,255,0.3);"><i class="fa-solid fa-qrcode"></i></div>
+                <div class="circle-icon" style="width:40px;height:40px;background:rgba(255,255,255,0.3);"><i class="fa-solid fa-user-shield"></i></div>
               </div>
 
               <div class="sidebar-greeting">Xin chào,<br><span id="sidebarName">Quý khách</span></div>
@@ -1324,6 +1906,7 @@
 
               <div class="sidebar-nav">
                 <button class="nav-btn active" data-page="home">Trang chủ</button>
+                <button class="nav-btn" data-page="transfer">Chuyển khoản</button>
                 <button class="nav-btn" data-page="savings">Tiết kiệm của tôi</button>
                 <button class="nav-btn" data-page="transactions">Lịch sử giao dịch</button>
                 <button class="nav-btn" data-page="profile">Thông tin cá nhân</button>
@@ -1338,7 +1921,6 @@
           <section class="hero">
             <div class="hero-top">
               <div class="brand">
-                <div class="brand-icon"><span></span><span></span><span></span><span></span></div>
                 <div class="brand-text">Sổ tiết kiệm</div>
               </div>
               <div class="hero-icons">
@@ -1379,6 +1961,10 @@
                     <small>Sổ đang mở</small>
                     <strong id="activeAccountsCount">0 sổ</strong>
                   </div>
+                  <div class="stat-box">
+                    <small>Đang chờ duyệt</small>
+                    <strong id="pendingReservedAmount">0 đ</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1400,6 +1986,32 @@
               <div class="quick-grid" id="quickGrid"></div>
             </section>
 
+          <div class="home-preview-grid">
+            <section class="section-card home-preview">
+              <div class="section-head">
+                <div>
+                  <h2>Tiết kiệm của tôi</h2>
+                  <p>Theo dõi sổ tiết kiệm và hiệu suất sinh lời</p>
+                </div>
+                <button class="outline-btn" data-go-page="savings">Xem tất cả</button>
+              </div>
+              <div class="accounts-grid" id="homeAccountsGrid"></div>
+            </section>
+
+            <section class="section-card home-preview">
+              <div class="section-head">
+                <div>
+                  <h2>Lịch sử giao dịch</h2>
+                  <p>Theo dõi các giao dịch gần nhất</p>
+                </div>
+                <button class="outline-btn" data-go-page="transactions">Xem tất cả</button>
+              </div>
+              <div class="transaction-list" id="homeTransactionsList"></div>
+            </section>
+          </div>
+          </div>
+
+          <div id="page-transfer" class="page-panel hidden">
             <section class="section-card" id="transferSection">
               <div class="section-head">
                 <div>
@@ -1424,32 +2036,6 @@
               <button id="transferBtn" class="login-btn primary-action-btn" type="button" style="max-width:320px;height:50px; font-size:18px;">Chuyển khoản</button>
               <div class="transfer-helper">Tài khoản của bạn: <strong id="myAccountNumber">-</strong></div>
             </section>
-
-            
-
-            <section class="section-card">
-              <div class="section-head">
-                <div>
-                  <h2>Tiết kiệm của tôi</h2>
-                  <p>Theo dõi sổ tiết kiệm và hiệu suất sinh lời</p>
-                </div>
-                <button class="outline-btn" data-go-page="savings">Xem tất cả</button>
-              </div>
-              <div class="accounts-grid" id="homeAccountsGrid"></div>
-            </section>
-
-            <section class="section-card">
-              <div class="section-head">
-                <div>
-                  <h2>Lịch sử giao dịch</h2>
-                  <p>Theo dõi các giao dịch gần nhất</p>
-                </div>
-                <button class="outline-btn" data-go-page="transactions">Xem tất cả</button>
-              </div>
-              <div class="transaction-list" id="homeTransactionsList"></div>
-            </section>
-
-            
           </div>
 
           <div id="page-savings" class="page-panel hidden">
@@ -1488,7 +2074,7 @@
                 </div>
                 <div class="profile-tile">
                   <div style="color:var(--muted);font-size:14px; margin-bottom:8px;">Số tiền gửi</div>
-                  <input id="openSavingsAmount" class="form-control" type="number" placeholder="Nhập số tiền" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
+                  <input id="openSavingsAmount" class="form-control" type="number" min="50000" placeholder="Tối thiểu 50.000 VND" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
                 </div>
               </div>
               <button id="openSavingsBtn" class="login-btn primary-action-btn" type="button" style="max-width:280px;height:50px; font-size:18px;">Mở sổ tiết kiệm</button>
@@ -1533,9 +2119,9 @@
             <div class="bottom-btn-icon"><i class="fa-solid fa-piggy-bank"></i></div>
             <small>Sổ</small>
           </button>
-          <button class="bottom-btn">
-            <div class="bottom-btn-icon"><i class="fa-solid fa-qrcode"></i></div>
-            <small>QR</small>
+          <button class="bottom-btn" data-page="transfer">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-building-columns"></i></div>
+            <small>CK</small>
           </button>
           <button class="bottom-btn" data-page="transactions">
             <div class="bottom-btn-icon"><i class="fa-solid fa-wallet"></i></div>
@@ -1548,6 +2134,19 @@
         </div>
       </nav>
     </section>
+  </div>
+
+  <div id="actionModal" class="action-modal hidden" aria-hidden="true">
+    <div id="actionModalBackdrop" class="action-modal-backdrop"></div>
+    <form id="actionModalForm" class="action-dialog">
+      <h2 id="actionModalTitle">Xác nhận</h2>
+      <p id="actionModalMessage"></p>
+      <div id="actionModalFields"></div>
+      <div class="action-modal-actions">
+        <button id="actionModalCancel" class="modal-btn" type="button">Hủy</button>
+        <button id="actionModalConfirm" class="modal-btn primary" type="submit">Xác nhận</button>
+      </div>
+    </form>
   </div>
 
   <script>
@@ -1598,9 +2197,7 @@
     };
 
     const quickItems = [
-      { icon: "fa-solid fa-money-bill-transfer", label: "Nộp tiền", description: "Tạo yêu cầu nạp tiền", action: "deposit" },
-      { icon: "fa-solid fa-money-bill-wave", label: "Rút tiền", description: "Tạo yêu cầu rút tiền", action: "withdraw" },
-      { icon: "fa-solid fa-building-columns", label: "Chuyển khoản", description: "Chuyển tiền qua số tài khoản", action: "transfer" },
+      { icon: "fa-solid fa-building-columns", label: "Chuyển khoản", description: "Chuyển tiền qua số tài khoản", page: "transfer" },
       { icon: "fa-solid fa-piggy-bank", label: "Mở sổ tiết kiệm", description: "Tạo yêu cầu mở sổ", page: "savings" },
       { icon: "fa-solid fa-rotate", label: "Làm mới dữ liệu", description: "Đồng bộ từ server", action: "refresh" }
     ];
@@ -1648,6 +2245,7 @@
       notificationEmpty: document.getElementById("notificationEmpty"),
       walletBalance: document.getElementById("walletBalance"),
       activeAccountsCount: document.getElementById("activeAccountsCount"),
+      pendingReservedAmount: document.getElementById("pendingReservedAmount"),
       toggleMoneyBtn: document.getElementById("toggleMoneyBtn"),
       quickGrid: document.getElementById("quickGrid"),
       serviceGrid: document.getElementById("serviceGrid"),
@@ -1667,8 +2265,18 @@
       homeTransactionsList: document.getElementById("homeTransactionsList"),
       profileGrid: document.getElementById("profileGrid"),
       productsCountText: document.getElementById("productsCountText"),
-      transactionsCountText: document.getElementById("transactionsCountText")
+      transactionsCountText: document.getElementById("transactionsCountText"),
+      actionModal: document.getElementById("actionModal"),
+      actionModalBackdrop: document.getElementById("actionModalBackdrop"),
+      actionModalForm: document.getElementById("actionModalForm"),
+      actionModalTitle: document.getElementById("actionModalTitle"),
+      actionModalMessage: document.getElementById("actionModalMessage"),
+      actionModalFields: document.getElementById("actionModalFields"),
+      actionModalCancel: document.getElementById("actionModalCancel"),
+      actionModalConfirm: document.getElementById("actionModalConfirm")
     };
+
+    let activeModalResolver = null;
 
     function money(n) {
       return new Intl.NumberFormat("vi-VN", {
@@ -1676,6 +2284,66 @@
         currency: "VND",
         maximumFractionDigits: 0
       }).format(Number(n || 0));
+    }
+
+    function termLabel(termMonths) {
+      const term = Number(termMonths || 0);
+      return term === 0 ? "Không kỳ hạn" : `${term} phút`;
+    }
+
+    function holdLabel(item) {
+      const term = Number(item.term_months || 0);
+      if (term > 0) return `Đáo hạn sau ${term} phút`;
+      const demoMinutes = Number(item.min_days_hold || 0) / 30;
+      return `Giữ tối thiểu ${demoMinutes.toLocaleString("vi-VN")} phút`;
+    }
+
+    function closeActionModal(result) {
+      el.actionModal.classList.add("hidden");
+      el.actionModal.setAttribute("aria-hidden", "true");
+      const resolver = activeModalResolver;
+      activeModalResolver = null;
+      if (resolver) resolver(result);
+    }
+
+    function openActionModal({ title, message, confirmText = "Xác nhận", fields = [] }) {
+      el.actionModalTitle.textContent = title;
+      el.actionModalMessage.textContent = message || "";
+      el.actionModalConfirm.textContent = confirmText;
+      el.actionModalFields.innerHTML = fields.map((field) => `
+        <div class="modal-field">
+          <label for="modalField_${escapeHtml(field.id)}">${escapeHtml(field.label)}</label>
+          <input
+            id="modalField_${escapeHtml(field.id)}"
+            name="${escapeHtml(field.id)}"
+            type="${escapeHtml(field.type || "text")}"
+            value="${escapeHtml(field.value || "")}"
+            min="${escapeHtml(field.min || "")}"
+            step="${escapeHtml(field.step || "1")}"
+            inputmode="${escapeHtml(field.inputmode || "numeric")}"
+            required
+          />
+        </div>
+      `).join("");
+      el.actionModal.classList.remove("hidden");
+      el.actionModal.setAttribute("aria-hidden", "false");
+      setTimeout(() => el.actionModalFields.querySelector("input")?.focus(), 0);
+
+      return new Promise((resolve) => {
+        activeModalResolver = resolve;
+      });
+    }
+
+    async function requestAmount(title, message, value = "50000") {
+      const result = await openActionModal({
+        title,
+        message,
+        confirmText: "Gửi yêu cầu",
+        fields: [{ id: "amount", label: "Số tiền VND", type: "number", min: "1", value }]
+      });
+      if (!result) return null;
+      const amount = Number(result.amount);
+      return amount > 0 ? amount : null;
     }
 
     function escapeHtml(str) {
@@ -1689,8 +2357,8 @@
 
     function formatTransactionType(type) {
       const map = {
-        DEPOSIT_TO_WALLET: "Nạp tiền vào ví",
-        WITHDRAW_FROM_WALLET: "Rút tiền từ ví",
+        TRANSFER_OUT: "Chuyển khoản đi",
+        TRANSFER_IN: "Chuyển khoản đến",
         OPEN_SAVINGS: "Mở sổ tiết kiệm",
         DEPOSIT_TO_SAVINGS: "Gửi thêm vào sổ",
         WITHDRAW_FROM_SAVINGS: "Rút tiền từ sổ",
@@ -1817,13 +2485,6 @@
           const action = btn.dataset.action;
           if (page) switchPage(page);
           if (action === "refresh") await fetchAllClientData();
-          if (action === "deposit") await handleDepositRequest();
-          if (action === "withdraw") await handleWithdrawRequest();
-          if (action === "transfer") {
-            switchPage("home");
-            el.transferSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-            el.transferToAccountNumber?.focus();
-          }
         });
       });
     }
@@ -1848,7 +2509,7 @@
           <div class="account-amount">${money(item.principal_balance)}</div>
           <div class="chip-list">
             <span class="chip">Lãi suất ${escapeHtml(item.interest_rate)}%/năm</span>
-            <span class="chip">Kỳ hạn ${escapeHtml(item.term_months)} tháng</span>
+            <span class="chip">Kỳ hạn ${escapeHtml(termLabel(item.term_months))}</span>
             <span class="chip">Mở ngày ${escapeHtml(item.opened_at)}</span>
           </div>
           ${item.status === "ACTIVE" ? `
@@ -1909,7 +2570,7 @@
 
     function renderProducts() {
       el.openSavingsProduct.innerHTML = appState.products.length
-        ? appState.products.map((item) => `<option value="${item.product_id}">${escapeHtml(item.name)} · ${escapeHtml(item.interest_rate)}%/năm · ${escapeHtml(item.term_months)} tháng</option>`).join("")
+        ? appState.products.map((item) => `<option value="${item.product_id}">${escapeHtml(item.name)} · ${escapeHtml(item.interest_rate)}%/năm · ${escapeHtml(termLabel(item.term_months))}</option>`).join("")
         : `<option value="">Chưa có gói tiết kiệm</option>`;
 
       el.productsCountText.textContent = `${appState.products.length} gói`;
@@ -1923,12 +2584,12 @@
           <div class="product-head">
             <div>
               <div class="product-title">${escapeHtml(item.name)}</div>
-              <div class="product-sub">Giữ tối thiểu ${escapeHtml(item.min_days_hold)} ngày</div>
+              <div class="product-sub">${escapeHtml(holdLabel(item))}</div>
             </div>
             <div class="product-id">#${escapeHtml(item.product_id)}</div>
           </div>
           <div class="chip-list">
-            <span class="chip">${escapeHtml(item.term_months)} tháng</span>
+            <span class="chip">${escapeHtml(termLabel(item.term_months))}</span>
             <span class="chip">${escapeHtml(item.interest_rate)}%/năm</span>
           </div>
         </div>
@@ -1967,6 +2628,7 @@
 
     function renderProfile() {
       const me = appState.me || {};
+      const dashboard = appState.dashboard || {};
       const items = [
         { label: "Họ và tên", value: me.full_name || "-" },
         { label: "Email", value: me.email || "-" },
@@ -1974,7 +2636,9 @@
         { label: "CCCD/CMND", value: me.identity_card || "-" },
         { label: "Trạng thái", value: me.status || "-" },
         { label: "Ngày tạo", value: me.created_at || "-" },
-        { label: "Số dư ví", value: money(me.wallet_balance || 0) }
+        { label: "Số dư ví", value: money(me.wallet_balance || 0) },
+        { label: "Ví khả dụng", value: money(dashboard.available_wallet_balance ?? me.wallet_balance ?? 0) },
+        { label: "Tiền chờ duyệt", value: money(dashboard.pending_reserved_amount || 0) }
       ];
 
       el.profileGrid.innerHTML = items.map((item) => `
@@ -1992,14 +2656,17 @@
       const email = me.email || dashboard.email || "Khách hàng cá nhân";
       const totalBalance = Number(dashboard.wallet_balance || 0) + Number(dashboard.total_savings_principal || 0);
       const accountNumber = me.account_number || dashboard.account_number || "-";
+      const availableWallet = Number(dashboard.available_wallet_balance ?? dashboard.wallet_balance ?? 0);
+      const pendingReserved = Number(dashboard.pending_reserved_amount || 0);
 
       el.sidebarName.textContent = displayName;
       el.sidebarEmail.textContent = email;
       el.heroName.textContent = displayName;
       el.heroStatus.textContent = `Khách hàng cá nhân · ${me.status || dashboard.status || "ACTIVE"}`;
       el.heroAccountNumber.textContent = `STK: ${accountNumber}`;
-      el.walletBalance.textContent = money(dashboard.wallet_balance || 0);
+      el.walletBalance.textContent = money(availableWallet);
       el.activeAccountsCount.textContent = `${dashboard.active_savings_accounts || 0} sổ`;
+      el.pendingReservedAmount.textContent = money(pendingReserved);
       el.totalBalance.textContent = appState.showMoney ? money(totalBalance) : "*** *** VND";
       el.myAccountNumber.textContent = accountNumber;
     }
@@ -2051,21 +2718,18 @@
       document.querySelectorAll(".page-panel").forEach((panel) => panel.classList.add("hidden"));
       const target = document.getElementById(`page-${page}`);
       if (target) target.classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (page === "transfer") {
+        setTimeout(() => el.transferToAccountNumber?.focus(), 120);
+      }
 
       if (rerenderNav) {
         document.querySelectorAll(".nav-btn").forEach((btn) => {
           btn.classList.toggle("active", btn.dataset.page === page);
         });
         document.querySelectorAll(".bottom-btn[data-page]").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const page = btn.dataset.page;
-          if (page === "home" && btn.textContent.includes("Nộp")) {
-            await handleDepositRequest();
-            return;
-          }
-          switchPage(page);
+          btn.classList.toggle("active", btn.dataset.page === page);
         });
-      });
       }
     }
 
@@ -2192,50 +2856,6 @@
       }
     }
 
-    async function handleDepositRequest() {
-      const value = prompt("Nhập số tiền muốn nộp vào tài khoản:", "1000000");
-      if (value === null) return;
-      const amount = Number(value);
-      if (!amount || amount <= 0) {
-        showToast("Số tiền nộp không hợp lệ.", "error");
-        return;
-      }
-
-      try {
-        await apiRequest("/api/client/deposit-requests", {
-          method: "POST",
-          body: JSON.stringify({ amount })
-        });
-        showToast("Đã tạo yêu cầu nạp tiền thành công.");
-        await fetchAllClientData();
-        switchPage("transactions");
-      } catch (error) {
-        showToast(error.message || "Không thể tạo yêu cầu nạp tiền.", "error");
-      }
-    }
-
-    async function handleWithdrawRequest() {
-      const value = prompt("Nhập số tiền muốn rút khỏi tài khoản:", "500000");
-      if (value === null) return;
-      const amount = Number(value);
-      if (!amount || amount <= 0) {
-        showToast("Số tiền rút không hợp lệ.", "error");
-        return;
-      }
-
-      try {
-        await apiRequest("/api/client/withdraw-requests", {
-          method: "POST",
-          body: JSON.stringify({ amount })
-        });
-        showToast("Đã tạo yêu cầu rút tiền thành công.");
-        await fetchAllClientData();
-        switchPage("transactions");
-      } catch (error) {
-        showToast(error.message || "Không thể tạo yêu cầu rút tiền.", "error");
-      }
-    }
-
     async function handleTransferRequest() {
       const toAccountNumber = String(el.transferToAccountNumber.value || "").trim();
       const amount = Number(el.transferAmount.value);
@@ -2307,7 +2927,11 @@
     }
 
     async function handleCloseSavingsRequest(accountId) {
-      const confirmed = confirm(`Xác nhận tạo yêu cầu tất toán cho sổ #${accountId}?`);
+      const confirmed = await openActionModal({
+        title: "Tất toán sổ",
+        message: `Tạo yêu cầu tất toán cho sổ #${accountId}. Staff hoặc Admin sẽ duyệt trước khi tiền về ví.`,
+        confirmText: "Tất toán"
+      });
       if (!confirmed) return;
 
       try {
@@ -2323,9 +2947,11 @@
     }
 
     async function handleSavingsDepositRequest(accountId) {
-      const value = prompt(`Nhập số tiền muốn gửi thêm vào sổ #${accountId}:`, "100000");
-      if (value === null) return;
-      const amount = Number(value);
+      const amount = await requestAmount(
+        "Gửi thêm vào sổ",
+        `Nhập số tiền muốn gửi thêm vào sổ #${accountId}. Số tiền sẽ trừ từ ví sau khi được duyệt.`,
+        "50000"
+      );
       if (!amount || amount <= 0) {
         showToast("Số tiền gửi thêm không hợp lệ.", "error");
         return;
@@ -2345,9 +2971,11 @@
     }
 
     async function handleSavingsWithdrawRequest(accountId) {
-      const value = prompt(`Nhập số tiền muốn rút từ sổ không kỳ hạn #${accountId}:`, "100000");
-      if (value === null) return;
-      const amount = Number(value);
+      const amount = await requestAmount(
+        "Rút từ sổ",
+        `Nhập số tiền muốn rút từ sổ không kỳ hạn #${accountId}. Staff hoặc Admin sẽ duyệt trước khi tiền về ví.`,
+        "50000"
+      );
       if (!amount || amount <= 0) {
         showToast("Số tiền rút không hợp lệ.", "error");
         return;
@@ -2456,6 +3084,18 @@
       el.logoutBtn.addEventListener("click", handleLogout);
       el.openSavingsBtn.addEventListener("click", handleOpenSavingsRequest);
       el.transferBtn.addEventListener("click", handleTransferRequest);
+      el.actionModalCancel.addEventListener("click", () => closeActionModal(null));
+      el.actionModalBackdrop.addEventListener("click", () => closeActionModal(null));
+      el.actionModalForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(el.actionModalForm);
+        closeActionModal(Object.fromEntries(formData.entries()));
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !el.actionModal.classList.contains("hidden")) {
+          closeActionModal(null);
+        }
+      });
       [el.transferToAccountNumber, el.transferAmount, el.transferNote].forEach((input) => {
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter") handleTransferRequest();

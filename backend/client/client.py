@@ -10,10 +10,13 @@ from common.savings_rules import (
     days_between,
     get_float_config,
     get_int_config,
+    rule_days_to_demo_days,
     term_days,
 )
 
 client_bp = Blueprint("client", __name__)
+
+MIN_OPEN_AMOUNT_FALLBACK = 50000
 
 
 def get_db():
@@ -46,6 +49,55 @@ def _parse_positive_amount(value, message="Số tiền không hợp lệ!"):
         return amount, None, None
     except (TypeError, ValueError):
         return None, jsonify({"message": "Số tiền không hợp lệ!"}), 400
+
+
+def _term_label(term_months):
+    term_value = int(term_months or 0)
+    return "không kỳ hạn" if term_value == 0 else f"{term_value} phút"
+
+
+def _rule_days_label(rule_days):
+    demo_minutes = max(float(rule_days or 0), 0) / 30
+    return f"{demo_minutes:g} phút"
+
+
+def _pending_savings_mutation(cursor, account_id):
+    cursor.execute(
+        """
+        SELECT transaction_id, transaction_type
+        FROM transactions
+        WHERE account_id = %s
+          AND status = 'PENDING'
+          AND transaction_type IN ('DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS')
+        ORDER BY created_at ASC
+        LIMIT 1
+        """,
+        (account_id,)
+    )
+    return cursor.fetchone()
+
+
+def _pending_wallet_reservations(cursor, user_id):
+    cursor.execute(
+        """
+        SELECT COALESCE(SUM(amount), 0)
+        FROM transactions
+        WHERE user_id = %s
+          AND status = 'PENDING'
+          AND transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS')
+        """,
+        (user_id,)
+    )
+    return float(cursor.fetchone()[0] or 0)
+
+
+def _available_wallet_balance(cursor, user_id, wallet_balance=None):
+    if wallet_balance is None:
+        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+        row = cursor.fetchone()
+        wallet_balance = float(row[0]) if row else 0
+    reserved_amount = _pending_wallet_reservations(cursor, user_id)
+    return max(float(wallet_balance or 0) - reserved_amount, 0), reserved_amount
 
 
 @client_bp.route("/api/client/me", methods=["GET"])
@@ -109,6 +161,7 @@ def get_client_dashboard():
             (user_id,)
         )
         pending_transactions = cursor.fetchone()[0]
+        available_wallet, pending_reserved_amount = _available_wallet_balance(cursor, user_id, user[5])
 
         cursor.execute(
             """
@@ -152,6 +205,8 @@ def get_client_dashboard():
                 "identity_card": user[3],
                 "account_number": user[4],
                 "wallet_balance": float(user[5]),
+                "available_wallet_balance": available_wallet,
+                "pending_reserved_amount": pending_reserved_amount,
                 "status": user[6],
                 "created_at": str(user[7]),
                 "active_savings_accounts": int(total_accounts or 0),
@@ -289,8 +344,7 @@ def get_my_savings_account_detail(account_id):
                 p.min_days_hold,
                 s.principal_balance,
                 s.opened_at,
-                s.status,
-                DATEDIFF(NOW(), s.opened_at) AS days_held
+                s.status
             FROM savings_accounts s
             JOIN savings_products p ON s.product_id = p.product_id
             WHERE s.account_id = %s AND s.user_id = %s
@@ -315,7 +369,7 @@ def get_my_savings_account_detail(account_id):
                 "principal_balance": float(row[7]),
                 "opened_at": str(row[8]),
                 "status": row[9],
-                "days_held": int(row[10] or 0),
+                "days_held": days_between(row[8]),
                 "maturity_days": term_days(row[4])
             }
         }), 200
@@ -331,94 +385,17 @@ def get_my_savings_account_detail(account_id):
 @client_bp.route("/api/client/deposit-requests", methods=["POST"])
 @require_role(["CUSTOMER"])
 def create_deposit_request():
-    user_id = _get_current_user_id()
-    data = request.get_json() or {}
-    amount = data.get("amount")
-
-    try:
-        amount = float(amount)
-        if amount <= 0:
-            return jsonify({"message": "Số tiền nạp phải lớn hơn 0!"}), 400
-    except (TypeError, ValueError):
-        return jsonify({"message": "Số tiền không hợp lệ!"}), 400
-
-    conn, cursor = get_db()
-    try:
-        cursor.execute(
-            """
-            INSERT INTO transactions (user_id, amount, transaction_type, status)
-            VALUES (%s, %s, 'DEPOSIT_TO_WALLET', 'PENDING')
-            """,
-            (user_id, amount)
-        )
-        conn.commit()
-
-        return jsonify({
-            "message": "Đã tạo yêu cầu nạp tiền, vui lòng chờ duyệt!",
-            "transaction_id": cursor.lastrowid,
-            "amount": amount,
-            "status": "PENDING"
-        }), 201
-    except Exception as e:
-        conn.rollback()
-        import traceback
-        traceback.print_exc()
-        return jsonify({"message": "Lỗi server!", "error": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+    return jsonify({
+        "message": "Tính năng yêu cầu nạp ví từ khách hàng đã được tắt. Khách hàng mới nhận 100.000 VND để demo và dùng số dư đó để mở sổ."
+    }), 410
 
 
 @client_bp.route("/api/client/withdraw-requests", methods=["POST"])
 @require_role(["CUSTOMER"])
 def create_withdraw_request():
-    user_id = _get_current_user_id()
-    data = request.get_json() or {}
-    amount = data.get("amount")
-
-    try:
-        amount = float(amount)
-        if amount <= 0:
-            return jsonify({"message": "Số tiền rút phải lớn hơn 0!"}), 400
-    except (TypeError, ValueError):
-        return jsonify({"message": "Số tiền không hợp lệ!"}), 400
-
-    conn, cursor = get_db()
-    try:
-        cursor.execute(
-            "SELECT wallet_balance, account_number FROM users WHERE user_id = %s",
-            (user_id,)
-        )
-        user = cursor.fetchone()
-        if not user:
-            return jsonify({"message": "Không tìm thấy khách hàng!"}), 404
-
-        if float(user[0]) < amount:
-            return jsonify({"message": "Số dư ví không đủ để tạo yêu cầu rút!"}), 400
-
-        cursor.execute(
-            """
-            INSERT INTO transactions (user_id, amount, transaction_type, status)
-            VALUES (%s, %s, 'WITHDRAW_FROM_WALLET', 'PENDING')
-            """,
-            (user_id, amount)
-        )
-        conn.commit()
-
-        return jsonify({
-            "message": "Đã tạo yêu cầu rút tiền, vui lòng chờ duyệt!",
-            "transaction_id": cursor.lastrowid,
-            "amount": amount,
-            "status": "PENDING"
-        }), 201
-    except Exception as e:
-        conn.rollback()
-        import traceback
-        traceback.print_exc()
-        return jsonify({"message": "Lỗi server!", "error": str(e)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+    return jsonify({
+        "message": "Tính năng yêu cầu rút ví qua Staff/Admin đã được tắt trong bản demo. Khách hàng sử dụng ví để chuyển khoản, mở sổ và tất toán sổ."
+    }), 410
 
 
 @client_bp.route("/api/client/transfers", methods=["POST"])
@@ -463,8 +440,14 @@ def transfer_to_account_number():
 
         receiver_id, receiver_name, receiver_account_number = receiver
 
-        if float(sender_wallet) < amount:
-            return jsonify({"message": "Số dư ví không đủ để chuyển khoản!"}), 400
+        available_wallet, pending_reserved_amount = _available_wallet_balance(cursor, sender_id, sender_wallet)
+        if available_wallet < amount:
+            return jsonify({
+                "message": "Số dư ví khả dụng không đủ để chuyển khoản!",
+                "wallet_balance": float(sender_wallet),
+                "available_wallet_balance": available_wallet,
+                "pending_reserved_amount": pending_reserved_amount
+            }), 400
 
         cursor.execute("UPDATE users SET wallet_balance = wallet_balance - %s WHERE user_id = %s", (amount, sender_id))
         cursor.execute("UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s", (amount, receiver_id))
@@ -472,7 +455,7 @@ def transfer_to_account_number():
         cursor.execute(
             """
             INSERT INTO transactions (user_id, amount, transaction_type, status)
-            VALUES (%s, %s, 'WITHDRAW_FROM_WALLET', 'APPROVED')
+            VALUES (%s, %s, 'TRANSFER_OUT', 'APPROVED')
             """,
             (sender_id, amount)
         )
@@ -481,7 +464,7 @@ def transfer_to_account_number():
         cursor.execute(
             """
             INSERT INTO transactions (user_id, amount, transaction_type, status)
-            VALUES (%s, %s, 'DEPOSIT_TO_WALLET', 'APPROVED')
+            VALUES (%s, %s, 'TRANSFER_IN', 'APPROVED')
             """,
             (receiver_id, amount)
         )
@@ -527,7 +510,7 @@ def create_open_savings_request():
 
     conn, cursor = get_db()
     try:
-        min_open_amount = get_float_config(cursor, MIN_OPEN_AMOUNT_KEY, 1000000)
+        min_open_amount = get_float_config(cursor, MIN_OPEN_AMOUNT_KEY, MIN_OPEN_AMOUNT_FALLBACK)
         if amount < min_open_amount:
             return jsonify({
                 "message": f"Số tiền mở sổ tối thiểu là {min_open_amount:,.0f} VND!"
@@ -556,8 +539,14 @@ def create_open_savings_request():
         if not user:
             return jsonify({"message": "Không tìm thấy khách hàng!"}), 404
 
-        if float(user[0]) < amount:
-            return jsonify({"message": "Số dư ví không đủ để mở sổ tiết kiệm!"}), 400
+        available_wallet, pending_reserved_amount = _available_wallet_balance(cursor, user_id, user[0])
+        if available_wallet < amount:
+            return jsonify({
+                "message": "Số dư ví khả dụng không đủ để mở sổ tiết kiệm!",
+                "wallet_balance": float(user[0]),
+                "available_wallet_balance": available_wallet,
+                "pending_reserved_amount": pending_reserved_amount
+            }), 400
 
         cursor.execute(
             """
@@ -632,20 +621,22 @@ def create_close_savings_request(account_id):
         if existing_pending:
             return jsonify({"message": "Sổ này đã có yêu cầu tất toán đang chờ duyệt!"}), 400
 
-        cursor.execute(
-            """
-            SELECT DATEDIFF(NOW(), %s)
-            """,
-            (opened_at,)
-        )
-        days_held = int(cursor.fetchone()[0] or 0)
-
-        required_days = term_days(term_months) if int(term_months or 0) > 0 else int(min_days_hold or get_int_config(cursor, NON_TERM_MIN_DAYS_KEY, 15))
-        if required_days and days_held < required_days:
+        days_held = days_between(opened_at)
+        pending_mutation = _pending_savings_mutation(cursor, account_id_db)
+        if pending_mutation:
             return jsonify({
-                "message": f"Chưa đủ thời gian giữ tối thiểu {required_days} ngày để tất toán!",
+                "message": f"Sổ này đang có giao dịch {pending_mutation[1]} chờ duyệt. Vui lòng xử lý giao dịch đó trước!",
+                "pending_transaction_id": pending_mutation[0]
+            }), 400
+
+        rule_min_days = int(min_days_hold or get_int_config(cursor, NON_TERM_MIN_DAYS_KEY, 15))
+        required_days = term_days(term_months) if int(term_months or 0) > 0 else rule_days_to_demo_days(rule_min_days)
+        if required_days and days_held < required_days:
+            required_label = _term_label(term_months) if int(term_months or 0) > 0 else _rule_days_label(rule_min_days)
+            return jsonify({
+                "message": f"Chưa đủ thời gian giữ tối thiểu {required_label} để tất toán!",
                 "days_held": days_held,
-                "min_days_hold": int(required_days)
+                "min_days_hold": required_days
             }), 400
 
         interest_amount = calculate_interest(float(principal_balance), float(interest_rate), days_held)
@@ -699,6 +690,7 @@ def get_my_transactions():
         LEFT JOIN savings_accounts s ON t.account_id = s.account_id
         LEFT JOIN savings_products p ON s.product_id = p.product_id
         WHERE t.user_id = %s
+          AND t.transaction_type NOT IN ('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET')
     """
     params = [user_id]
 
@@ -757,7 +749,7 @@ def create_savings_deposit_request(account_id):
 
     conn, cursor = get_db()
     try:
-        min_deposit = get_float_config(cursor, MIN_SAVINGS_DEPOSIT_AMOUNT_KEY, 100000)
+        min_deposit = get_float_config(cursor, MIN_SAVINGS_DEPOSIT_AMOUNT_KEY, 50000)
         if amount < min_deposit:
             return jsonify({"message": f"Số tiền gửi thêm tối thiểu là {min_deposit:,.0f} VND!"}), 400
 
@@ -775,16 +767,28 @@ def create_savings_deposit_request(account_id):
             return jsonify({"message": "Không tìm thấy sổ tiết kiệm!"}), 404
         if account[1] != "ACTIVE":
             return jsonify({"message": "Chỉ được gửi thêm vào sổ đang ACTIVE!"}), 400
+        pending_mutation = _pending_savings_mutation(cursor, account_id)
+        if pending_mutation:
+            return jsonify({
+                "message": f"Sổ này đang có giao dịch {pending_mutation[1]} chờ duyệt. Vui lòng xử lý giao dịch đó trước!",
+                "pending_transaction_id": pending_mutation[0]
+            }), 400
 
         cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
         wallet = float(cursor.fetchone()[0])
-        if wallet < amount:
-            return jsonify({"message": "Số dư ví không đủ để gửi thêm vào sổ!"}), 400
+        available_wallet, pending_reserved_amount = _available_wallet_balance(cursor, user_id, wallet)
+        if available_wallet < amount:
+            return jsonify({
+                "message": "Số dư ví khả dụng không đủ để gửi thêm vào sổ!",
+                "wallet_balance": wallet,
+                "available_wallet_balance": available_wallet,
+                "pending_reserved_amount": pending_reserved_amount
+            }), 400
 
         product_term_days = term_days(account[3])
         if product_term_days > 0 and days_between(account[2]) < product_term_days:
             return jsonify({
-                "message": "Sổ có kỳ hạn chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!",
+                "message": f"Sổ có kỳ hạn {_term_label(account[3])} chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!",
                 "days_held": days_between(account[2]),
                 "required_days": product_term_days
             }), 400
@@ -844,6 +848,12 @@ def create_savings_withdraw_request(account_id):
         principal_balance = float(principal_balance)
         if status != "ACTIVE":
             return jsonify({"message": "Chỉ được rút tiền từ sổ đang ACTIVE!"}), 400
+        pending_mutation = _pending_savings_mutation(cursor, account_id)
+        if pending_mutation:
+            return jsonify({
+                "message": f"Sổ này đang có giao dịch {pending_mutation[1]} chờ duyệt. Vui lòng xử lý giao dịch đó trước!",
+                "pending_transaction_id": pending_mutation[0]
+            }), 400
         if amount > principal_balance:
             return jsonify({"message": "Số tiền rút không được vượt quá số dư sổ!"}), 400
 
@@ -851,10 +861,11 @@ def create_savings_withdraw_request(account_id):
         if int(term_months or 0) > 0:
             return jsonify({"message": "Sổ có kỳ hạn phải tất toán toàn bộ, không được rút một phần!"}), 400
 
-        required_days = int(min_days_hold or get_int_config(cursor, NON_TERM_MIN_DAYS_KEY, 15))
+        rule_min_days = int(min_days_hold or get_int_config(cursor, NON_TERM_MIN_DAYS_KEY, 15))
+        required_days = rule_days_to_demo_days(rule_min_days)
         if held_days < required_days:
             return jsonify({
-                "message": f"Sổ không kỳ hạn phải gửi trên {required_days} ngày mới được rút!",
+                "message": f"Sổ không kỳ hạn phải gửi trên {_rule_days_label(rule_min_days)} mới được rút!",
                 "days_held": held_days,
                 "min_days_hold": required_days
             }), 400

@@ -9,8 +9,21 @@ from common.savings_rules import (
     days_between,
     get_float_config,
     get_int_config,
+    rule_days_to_demo_days,
     term_days,
 )
+
+MIN_OPEN_AMOUNT_FALLBACK = 50000
+
+
+def _term_label(term_months):
+    term_value = int(term_months or 0)
+    return "không kỳ hạn" if term_value == 0 else f"{term_value} phút"
+
+
+def _rule_days_label(rule_days):
+    demo_minutes = max(float(rule_days or 0), 0) / 30
+    return f"{demo_minutes:g} phút"
 
 transactions_bp = Blueprint('transactions', __name__)
 
@@ -37,7 +50,7 @@ def get_all_transactions():
         FROM transactions t
         JOIN users u ON t.user_id = u.user_id
         LEFT JOIN savings_products p ON t.target_product_id = p.product_id
-        WHERE 1=1
+        WHERE t.transaction_type NOT IN ('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET')
     """
     params = []
     
@@ -116,7 +129,7 @@ def approve_transaction(transaction_id):
             db_cursor.execute("UPDATE users SET wallet_balance = wallet_balance - %s WHERE user_id = %s", (amount, user_id))
             
         elif transaction_type == 'OPEN_SAVINGS':
-            min_open_amount = get_float_config(db_cursor, MIN_OPEN_AMOUNT_KEY, 1000000)
+            min_open_amount = get_float_config(db_cursor, MIN_OPEN_AMOUNT_KEY, MIN_OPEN_AMOUNT_FALLBACK)
             if amount < min_open_amount:
                 return jsonify({'message': f'Số tiền mở sổ tối thiểu là {min_open_amount:,.0f} VND!'}), 400
             if not target_product_id:
@@ -146,7 +159,7 @@ def approve_transaction(transaction_id):
             )
 
         elif transaction_type == 'DEPOSIT_TO_SAVINGS':
-            min_deposit = get_float_config(db_cursor, MIN_SAVINGS_DEPOSIT_AMOUNT_KEY, 100000)
+            min_deposit = get_float_config(db_cursor, MIN_SAVINGS_DEPOSIT_AMOUNT_KEY, 50000)
             if amount < min_deposit:
                 return jsonify({'message': f'Số tiền gửi thêm tối thiểu là {min_deposit:,.0f} VND!'}), 400
             db_cursor.execute(
@@ -165,7 +178,7 @@ def approve_transaction(transaction_id):
                 return jsonify({'message': 'Chỉ được gửi thêm vào sổ ACTIVE!'}), 400
             required_days = term_days(account[3])
             if required_days > 0 and days_between(account[2]) < required_days:
-                return jsonify({'message': 'Sổ có kỳ hạn chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!'}), 400
+                return jsonify({'message': f'Sổ có kỳ hạn {_term_label(account[3])} chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!'}), 400
             db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
             wallet = float(db_cursor.fetchone()[0])
             if wallet < amount:
@@ -195,9 +208,10 @@ def approve_transaction(transaction_id):
             if amount > principal_balance:
                 return jsonify({'message': 'Số tiền rút vượt quá số dư sổ!'}), 400
             held_days = days_between(opened_at)
-            required_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
+            rule_min_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
+            required_days = rule_days_to_demo_days(rule_min_days)
             if held_days < required_days:
-                return jsonify({'message': f'Sổ không kỳ hạn phải gửi trên {required_days} ngày mới được rút!'}), 400
+                return jsonify({'message': f'Sổ không kỳ hạn phải gửi trên {_rule_days_label(rule_min_days)} mới được rút!'}), 400
             interest_amount = calculate_interest(amount, float(interest_rate), held_days)
             db_cursor.execute(
                 "UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s",
@@ -235,9 +249,11 @@ def approve_transaction(transaction_id):
             if account_status != 'ACTIVE':
                 return jsonify({'message': 'Chỉ được tất toán sổ ACTIVE!'}), 400
             held_days = days_between(opened_at)
-            required_days = term_days(term_months) if int(term_months or 0) > 0 else int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
+            rule_min_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
+            required_days = term_days(term_months) if int(term_months or 0) > 0 else rule_days_to_demo_days(rule_min_days)
             if required_days and held_days < required_days:
-                return jsonify({'message': f'Chưa đủ thời gian giữ tối thiểu {required_days} ngày để tất toán!'}), 400
+                required_label = _term_label(term_months) if int(term_months or 0) > 0 else _rule_days_label(rule_min_days)
+                return jsonify({'message': f'Chưa đủ thời gian giữ tối thiểu {required_label} để tất toán!'}), 400
             interest_amount = calculate_interest(principal_balance, float(interest_rate), held_days)
             db_cursor.execute("UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s", (principal_balance + interest_amount, user_id))
             db_cursor.execute("UPDATE savings_accounts SET status = 'CLOSED', principal_balance = 0 WHERE account_id = %s", (account_id,))
@@ -440,18 +456,20 @@ def get_daily_activity_report():
         db_cursor.execute(
             """
             SELECT
-                COALESCE(p.name, target_p.name, 'Ví điện tử') AS product_name,
+                COALESCE(p.name, target_p.name, 'Giao dịch khác') AS product_name,
                 SUM(CASE
-                    WHEN t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS', 'DEPOSIT_TO_WALLET')
+                    WHEN t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS')
                     THEN t.amount ELSE 0 END) AS total_in,
                 SUM(CASE
-                    WHEN t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS', 'WITHDRAW_FROM_WALLET')
+                    WHEN t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS')
                     THEN t.amount + COALESCE(t.interest_amount, 0) ELSE 0 END) AS total_out
             FROM transactions t
             LEFT JOIN savings_accounts s ON t.account_id = s.account_id
             LEFT JOIN savings_products p ON s.product_id = p.product_id
             LEFT JOIN savings_products target_p ON t.target_product_id = target_p.product_id
-            WHERE DATE(t.created_at) = %s AND t.status = 'APPROVED'
+            WHERE DATE(t.created_at) = %s
+              AND t.status = 'APPROVED'
+              AND t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS')
             GROUP BY product_name
             ORDER BY product_name
             """,

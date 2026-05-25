@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../../api/axios';
 
 const typeMap = {
-  DEPOSIT_TO_WALLET: 'Nạp tiền ví',
-  WITHDRAW_FROM_WALLET: 'Rút tiền ví',
+  TRANSFER_OUT: 'Chuyển khoản đi',
+  TRANSFER_IN: 'Chuyển khoản đến',
   OPEN_SAVINGS: 'Mở sổ tiết kiệm',
   DEPOSIT_TO_SAVINGS: 'Gửi thêm vào sổ',
   WITHDRAW_FROM_SAVINGS: 'Rút tiền từ sổ',
@@ -16,6 +16,7 @@ export default function TransactionApprovals() {
   const [statusFilter, setStatusFilter] = useState('PENDING');
   const [typeFilter, setTypeFilter] = useState('');
   const [processingId, setProcessingId] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null);
   const [msg, setMsg] = useState('');
 
   const fetchTransactions = useCallback(async () => {
@@ -45,8 +46,6 @@ export default function TransactionApprovals() {
 
   const handleAction = async (transactionId, action) => {
     const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
-    const confirmed = window.confirm(`Bạn có chắc muốn ${actionText} giao dịch #${transactionId}?`);
-    if (!confirmed) return;
 
     setProcessingId(transactionId);
     setMsg('');
@@ -60,7 +59,13 @@ export default function TransactionApprovals() {
       setMsg(err.response?.data?.message || `Không thể ${actionText} giao dịch.`);
     } finally {
       setProcessingId(null);
+      setConfirmAction(null);
     }
+  };
+
+  const requestAction = (transactionId, action) => {
+    const actionText = action === 'approve' ? 'duyệt' : 'từ chối';
+    setConfirmAction({ transactionId, action, actionText });
   };
 
   return (
@@ -137,14 +142,14 @@ export default function TransactionApprovals() {
                         <button
                           className="ds-btn ds-btn-success"
                           disabled={!isPending || isRowProcessing}
-                          onClick={() => handleAction(t.transaction_id, 'approve')}
+                          onClick={() => requestAction(t.transaction_id, 'approve')}
                         >
                           Duyệt
                         </button>
                         <button
                           className="ds-btn ds-btn-danger"
                           disabled={!isPending || isRowProcessing}
-                          onClick={() => handleAction(t.transaction_id, 'reject')}
+                          onClick={() => requestAction(t.transaction_id, 'reject')}
                         >
                           Từ chối
                         </button>
@@ -157,6 +162,25 @@ export default function TransactionApprovals() {
           </tbody>
         </table>
       </div>
+
+      {confirmAction && (
+        <div className="ds-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="ds-modal">
+            <h3>Xác nhận giao dịch</h3>
+            <p>Bạn đang {confirmAction.actionText} giao dịch #{confirmAction.transactionId}. Hành động này sẽ cập nhật dữ liệu ví/sổ nếu được duyệt.</p>
+            <div className="ds-modal-actions">
+              <button className="ds-btn" onClick={() => setConfirmAction(null)} disabled={!!processingId}>Hủy</button>
+              <button
+                className={`ds-btn ${confirmAction.action === 'approve' ? 'ds-btn-success' : 'ds-btn-danger'}`}
+                onClick={() => handleAction(confirmAction.transactionId, confirmAction.action)}
+                disabled={!!processingId}
+              >
+                {processingId ? 'Đang xử lý' : 'Xác nhận'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

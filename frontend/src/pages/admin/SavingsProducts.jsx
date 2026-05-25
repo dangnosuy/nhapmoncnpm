@@ -59,6 +59,7 @@ export default function SavingsProducts() {
   };
 
   const handleUpdate = async (productId) => {
+    setMsg('');
     try {
       await api.patch(`/admin/savings-products/${productId}`, {
         ...editForm,
@@ -67,19 +68,22 @@ export default function SavingsProducts() {
         min_days_hold: Number(editForm.min_days_hold),
       });
       setEditId(null);
+      setMsg('Cập nhật gói tiết kiệm thành công!');
       fetchProducts();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi!');
+      setMsg(err.response?.data?.message || 'Lỗi!');
     }
   };
 
   const handleToggle = async (productId) => {
+    setMsg('');
     try {
       const product = products.find((item) => item.product_id === productId);
       await api.patch(`/admin/savings-products/${productId}`, { is_active: !product?.is_active });
+      setMsg('Cập nhật trạng thái gói thành công!');
       fetchProducts();
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi!');
+      setMsg(err.response?.data?.message || 'Lỗi!');
     }
   };
 
@@ -123,11 +127,11 @@ export default function SavingsProducts() {
         }}>
           <div>
             <label style={{ fontSize: 12, color: '#888' }}>Tên gói *</label>
-            <input style={inputStyle} placeholder="VD: 3 tháng" required
+            <input style={inputStyle} placeholder="VD: Tiết kiệm 3 phút" required
               value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div>
-            <label style={{ fontSize: 12, color: '#888' }}>Kỳ hạn (tháng) *</label>
+            <label style={{ fontSize: 12, color: '#888' }}>Kỳ hạn demo (phút) *</label>
             <input style={inputStyle} type="number" min="0" required
               value={form.term_months} onChange={(e) => setForm({ ...form, term_months: e.target.value })} />
           </div>
@@ -159,7 +163,7 @@ export default function SavingsProducts() {
             <tr style={{ background: '#fafafa', textAlign: 'left' }}>
               <th style={{ padding: '12px 16px' }}>ID</th>
               <th style={{ padding: '12px 16px' }}>Tên gói</th>
-              <th style={{ padding: '12px 16px' }}>Kỳ hạn (tháng)</th>
+              <th style={{ padding: '12px 16px' }}>Kỳ hạn demo (phút)</th>
               <th style={{ padding: '12px 16px' }}>Lãi suất (%/năm)</th>
               <th style={{ padding: '12px 16px' }}>Ngày giữ tối thiểu</th>
               <th style={{ padding: '12px 16px' }}>Trạng thái</th>
@@ -204,7 +208,7 @@ export default function SavingsProducts() {
                   <>
                     <td style={{ padding: '10px 16px' }}>{p.product_id}</td>
                     <td style={{ padding: '10px 16px', fontWeight: 500 }}>{p.name}</td>
-                    <td style={{ padding: '10px 16px' }}>{p.term_months === 0 ? 'Không kỳ hạn' : `${p.term_months} tháng`}</td>
+                    <td style={{ padding: '10px 16px' }}>{p.term_months === 0 ? 'Không kỳ hạn' : `${p.term_months} phút`}</td>
                     <td style={{ padding: '10px 16px', color: '#1890ff', fontWeight: 600 }}>{p.interest_rate}%</td>
                     <td style={{ padding: '10px 16px' }}>{p.min_days_hold} ngày</td>
                     <td style={{ padding: '10px 16px' }}>
