@@ -513,6 +513,7 @@
       document.querySelectorAll(".nav button").forEach((btn) => btn.classList.toggle("active", btn.dataset.page === page));
       el.pageTitle.textContent = pageMeta[page][0];
       el.pageSub.textContent = pageMeta[page][1];
+      if (page === "analytics") loadAnalytics();
     }
 
     function renderRows(target, rows, emptyText) {
