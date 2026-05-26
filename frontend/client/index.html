@@ -1069,6 +1069,50 @@
       background: #fff !important;
     }
 
+    .icon-btn.realtime-pulse {
+      animation: bellShake .7s ease-in-out 2;
+      background: #fef3c7 !important;
+    }
+
+    .growth-chart {
+      margin-top: 14px;
+      border: 2px solid #111827;
+      padding: 10px;
+      background: #fff;
+    }
+
+    .growth-chart-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .growth-chart svg {
+      display: block;
+      width: 100%;
+      height: 92px;
+      margin-top: 8px;
+    }
+
+    .growth-chart-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    @keyframes bellShake {
+      0%, 100% { transform: rotate(0); }
+      20% { transform: rotate(-14deg); }
+      40% { transform: rotate(12deg); }
+      60% { transform: rotate(-8deg); }
+      80% { transform: rotate(6deg); }
+    }
+
     .login-title-main,
     .hero-title,
     .section-head h2,
@@ -1748,146 +1792,7 @@
 </head>
 <body>
   <div class="app-shell">
-    <section id="loginPage" class="login-page floating-bg">
-      <div class="login-page-pattern"></div>
-      <div class="login-decor">
-        <div class="mesh-glow one"></div>
-        <div class="mesh-glow two"></div>
-        <div class="mesh-glow three"></div>
-        <div class="ring one"></div>
-        <div class="ring two"></div>
-        <div class="sparkles"></div>
-        <div class="orbs">
-          <span class="orb o1"></span>
-          <span class="orb o2"></span>
-          <span class="orb o3"></span>
-          <span class="orb o4"></span>
-          <span class="orb o5"></span>
-        </div>
-      </div>
-      <div class="login-container">
-        <div class="login-left">
-          <div class="brand">
-            <div class="brand-text">Sổ tiết kiệm</div>
-          </div>
-          <h1>Nền tảng tiết kiệm số.</h1>
-          <p>
-            Giá trị tích lũy niềm tin
-          </p>
-          <div class="feature-grid">
-            <div class="feature-item"><small>Ưu điểm</small><strong>Văn minh</strong></div>
-            <div class="feature-item"><small>Ưu điểm</small><strong>Hiện đại</strong></div>
-            <div class="feature-item"><small>Ưu điểm</small><strong>Nhanh chóng</strong></div>
-          </div>
-          <div class="login-metrics">
-            <div class="metric-chip"><strong>24/7</strong><small>Hỗ trợ trực tuyến</small></div>
-            <div class="metric-chip"><strong>99.9%</strong><small>Ổn định giao dịch</small></div>
-            <div class="metric-chip"><strong>256-bit</strong><small>Mã hóa bảo mật</small></div>
-          </div>
-        </div>
-
-        <div class="login-card">
-          <div class="login-card-main">
-            <div class="mobile-top" style="justify-content: space-between; align-items: center; margin-bottom: 18px;">
-              <div class="brand">
-                <div class="brand-text">Sổ tiết kiệm</div>
-              </div>
-              <div style="display:flex; gap:10px;">
-                <div class="circle-icon"><i class="fa-regular fa-bell"></i></div>
-                <div class="circle-icon"><i class="fa-solid fa-bars"></i></div>
-              </div>
-            </div>
-
-            <div class="login-avatar"><i class="fa-solid fa-piggy-bank"></i></div>
-            <div class="login-title-sub">Xin chào,</div>
-            <div class="login-title-main">Quý khách</div>
-
-            <div id="loginFields">
-              <div class="form-group">
-                <label for="loginUsername">Tên đăng nhập</label>
-                <input id="loginUsername" class="form-control" type="text" placeholder="Nhập email đăng nhập" />
-              </div>
-
-              <div class="form-group">
-                <label for="loginPassword">Mật khẩu</label>
-                <input id="loginPassword" class="form-control" type="password" placeholder="Nhập mật khẩu" />
-              </div>
-            </div>
-
-            <div class="login-row">
-              <button id="showRegisterBtn" class="text-btn" type="button">Đăng ký tài khoản</button>
-              <button id="forgotPasswordBtn" type="button" class="text-btn">Quên mật khẩu?</button>
-            </div>
-
-            <div id="registerForm" class="register-panel hidden">
-              <div class="form-group">
-                <label for="registerFullName">Họ và tên</label>
-                <input id="registerFullName" class="form-control" type="text" placeholder="Nhập họ và tên" />
-              </div>
-
-              <div class="form-group">
-                <label for="registerIdentityCard">CMND/CCCD</label>
-                <input id="registerIdentityCard" class="form-control" type="text" placeholder="Nhập số CMND/CCCD" />
-              </div>
-
-              <div class="form-group">
-                <label for="registerEmail">Email đăng nhập</label>
-                <input id="registerEmail" class="form-control" type="email" placeholder="Nhập email" />
-              </div>
-
-              <div class="form-group">
-                <label for="registerPassword">Mật khẩu</label>
-                <input id="registerPassword" class="form-control" type="password" placeholder="Nhập mật khẩu mới" />
-              </div>
-
-              <div class="form-group">
-                <label for="registerConfirmPassword">Xác nhận mật khẩu</label>
-                <input id="registerConfirmPassword" class="form-control" type="password" placeholder="Nhập lại mật khẩu" />
-              </div>
-
-              <button id="registerBtn" class="login-btn" type="button" style="margin-top:16px; background: rgba(255,255,255,0.22); font-size: 20px;">Tạo tài khoản</button>
-              <button id="cancelRegisterBtn" class="text-btn" type="button" style="display:block; margin:10px auto 0;">Quay lại đăng nhập</button>
-            </div>
-
-            <div id="forgotPasswordForm" class="register-panel hidden">
-              <div class="form-group">
-                <label for="forgotEmail">Email tài khoản</label>
-                <input id="forgotEmail" class="form-control" type="email" placeholder="Nhập email tài khoản" />
-              </div>
-
-              <div class="form-group">
-                <label for="forgotIdentityCard">CMND/CCCD</label>
-                <input id="forgotIdentityCard" class="form-control" type="text" placeholder="Nhập số CMND/CCCD" />
-              </div>
-
-              <div class="form-group">
-                <label for="forgotNewPassword">Mật khẩu mới</label>
-                <input id="forgotNewPassword" class="form-control" type="password" placeholder="Nhập mật khẩu mới" />
-              </div>
-
-              <div class="form-group">
-                <label for="forgotConfirmPassword">Xác nhận mật khẩu mới</label>
-                <input id="forgotConfirmPassword" class="form-control" type="password" placeholder="Nhập lại mật khẩu mới" />
-              </div>
-
-              <button id="submitForgotPasswordBtn" class="login-btn" type="button" style="margin-top:16px; background: rgba(255,255,255,0.22); font-size: 20px;">Đặt lại mật khẩu</button>
-              <button id="cancelForgotPasswordBtn" class="text-btn" type="button" style="display:block; margin:10px auto 0;">Quay lại đăng nhập</button>
-            </div>
-
-            <div id="loginError" class="login-error hidden"></div>
-            <div id="authModeHint" class="auth-mode-hint">Đăng nhập để quản lý tiết kiệm và giao dịch của bạn.</div>
-            <div class="login-trust-row">
-              <div class="trust-pill"><i class="fa-solid fa-shield-halved"></i>Bảo mật nhiều lớp</div>
-              <div class="trust-pill"><i class="fa-solid fa-bolt"></i>Giao dịch tức thì</div>
-            </div>
-
-            <button id="loginBtn" class="login-btn" type="button">Đăng nhập</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="dashboardPage" class="dashboard-page hidden">
+    <section id="dashboardPage" class="dashboard-page">
       <div class="dashboard-wrap">
         <aside class="sidebar-card">
           <div class="sidebar-inner">
@@ -1942,7 +1847,7 @@
             <div class="hero-grid">
               <div class="hero-balance">
                 <button id="toggleMoneyBtn" class="hero-eye" type="button"><i class="fa-regular fa-eye"></i></button>
-                <h3>Tổng số dư VND</h3>
+                <h3>Tổng tài sản VND</h3>
                 <div id="totalBalance" class="balance-value">*** *** VND</div>
                 <div class="mini-chip">SINH LỜI MỖI NGÀY <i class="fa-solid fa-chevron-right"></i></div>
               </div>
@@ -2074,7 +1979,7 @@
                 </div>
                 <div class="profile-tile">
                   <div style="color:var(--muted);font-size:14px; margin-bottom:8px;">Số tiền gửi</div>
-                  <input id="openSavingsAmount" class="form-control" type="number" min="50000" placeholder="Tối thiểu 50.000 VND" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
+                  <input id="openSavingsAmount" class="form-control" type="number" min="1000000" placeholder="Tối thiểu 1.000.000 VND" style="color:var(--text); background:#fff; border:1px solid #e5e7eb;" />
                 </div>
               </div>
               <button id="openSavingsBtn" class="login-btn primary-action-btn" type="button" style="max-width:280px;height:50px; font-size:18px;">Mở sổ tiết kiệm</button>
@@ -2193,7 +2098,8 @@
       dashboard: null,
       products: [],
       accounts: [],
-      transactions: []
+      transactions: [],
+      eventSource: null
     };
 
     const quickItems = [
@@ -2205,31 +2111,7 @@
     const serviceItems = [];
 
     const el = {
-      loginPage: document.getElementById("loginPage"),
       dashboardPage: document.getElementById("dashboardPage"),
-      loginUsername: document.getElementById("loginUsername"),
-      loginPassword: document.getElementById("loginPassword"),
-      loginFields: document.getElementById("loginFields"),
-      loginBtn: document.getElementById("loginBtn"),
-      showRegisterBtn: document.getElementById("showRegisterBtn"),
-      forgotPasswordBtn: document.getElementById("forgotPasswordBtn"),
-      registerForm: document.getElementById("registerForm"),
-      forgotPasswordForm: document.getElementById("forgotPasswordForm"),
-      registerEmail: document.getElementById("registerEmail"),
-      registerPassword: document.getElementById("registerPassword"),
-      registerConfirmPassword: document.getElementById("registerConfirmPassword"),
-      registerFullName: document.getElementById("registerFullName"),
-      registerIdentityCard: document.getElementById("registerIdentityCard"),
-      registerBtn: document.getElementById("registerBtn"),
-      cancelRegisterBtn: document.getElementById("cancelRegisterBtn"),
-      forgotEmail: document.getElementById("forgotEmail"),
-      forgotIdentityCard: document.getElementById("forgotIdentityCard"),
-      forgotNewPassword: document.getElementById("forgotNewPassword"),
-      forgotConfirmPassword: document.getElementById("forgotConfirmPassword"),
-      submitForgotPasswordBtn: document.getElementById("submitForgotPasswordBtn"),
-      cancelForgotPasswordBtn: document.getElementById("cancelForgotPasswordBtn"),
-      loginError: document.getElementById("loginError"),
-      authModeHint: document.getElementById("authModeHint"),
       logoutBtn: document.getElementById("logoutBtn"),
       loadingBar: document.getElementById("loadingBar"),
       sidebarName: document.getElementById("sidebarName"),
@@ -2286,16 +2168,65 @@
       }).format(Number(n || 0));
     }
 
+    function productDisplayName(name) {
+      return String(name || "").replaceAll("phút", "tháng");
+    }
+
     function termLabel(termMonths) {
       const term = Number(termMonths || 0);
-      return term === 0 ? "Không kỳ hạn" : `${term} phút`;
+      return term === 0 ? "Không kỳ hạn" : `${term} tháng`;
     }
 
     function holdLabel(item) {
       const term = Number(item.term_months || 0);
-      if (term > 0) return `Đáo hạn sau ${term} phút`;
-      const demoMinutes = Number(item.min_days_hold || 0) / 30;
-      return `Giữ tối thiểu ${demoMinutes.toLocaleString("vi-VN")} phút`;
+      if (term > 0) return `Đáo hạn sau ${term} tháng`;
+      return `Giữ tối thiểu ${Number(item.min_days_hold || 0).toLocaleString("vi-VN")} ngày`;
+    }
+
+    function demoMinutesHeld(openedAt) {
+      const opened = new Date(openedAt).getTime();
+      if (!opened) return 0;
+      return Math.max((Date.now() - opened) / 60000, 0);
+    }
+
+    function projectedValue(principal, annualRate, demoMinutes) {
+      return Number(principal || 0) * (1 + (Number(annualRate || 0) / 100) * (Math.max(demoMinutes, 0) / 12));
+    }
+
+    function renderGrowthChart(item) {
+      const principal = Number(item.principal_balance || 0);
+      const annualRate = Number(item.interest_rate || 0);
+      const term = Number(item.term_months || 0);
+      const duration = term > 0 ? term : 12;
+      const held = Math.min(demoMinutesHeld(item.opened_at), duration);
+      const current = projectedValue(principal, annualRate, held);
+      const maturity = projectedValue(principal, annualRate, duration);
+      const points = [0, duration / 2, duration].map((minute, index) => {
+        const value = projectedValue(principal, annualRate, minute);
+        const x = 8 + index * 42;
+        const y = 72 - ((value - principal) / Math.max(maturity - principal, 1)) * 52;
+        return `${x},${Math.max(12, Math.min(72, y))}`;
+      }).join(" ");
+      const progressX = 8 + (held / duration) * 84;
+
+      return `
+        <div class="growth-chart">
+          <div class="growth-chart-title">
+            <span>Biểu đồ tăng trưởng</span>
+            <span>Hiện tại: ${money(current)}</span>
+          </div>
+          <svg viewBox="0 0 100 84" role="img" aria-label="Biểu đồ tăng trưởng sổ tiết kiệm">
+            <line x1="8" y1="72" x2="92" y2="72" stroke="#111827" stroke-width="2" />
+            <polyline points="${points}" fill="none" stroke="#dd614c" stroke-width="4" stroke-linecap="square" stroke-linejoin="round" />
+            <line x1="${progressX}" y1="10" x2="${progressX}" y2="76" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 3" />
+            <circle cx="${progressX}" cy="72" r="3.5" fill="#2563eb" stroke="#111827" stroke-width="1.5" />
+          </svg>
+          <div class="growth-chart-labels">
+            <span>Gốc ${money(principal)}</span>
+            <span>${term > 0 ? `Đáo hạn ${termLabel(term)}` : "Mốc 12 tháng demo"}: ${money(maturity)}</span>
+          </div>
+        </div>
+      `;
     }
 
     function closeActionModal(result) {
@@ -2419,53 +2350,7 @@
 
     function setLoginError(message) {
       if (!message) {
-        el.loginError.classList.add("hidden");
-        el.loginError.textContent = "";
         return;
-      }
-      el.loginError.textContent = message;
-      el.loginError.classList.remove("hidden");
-    }
-
-    function setRegisterMode(enabled) {
-      appState.isRegisterMode = enabled;
-      if (enabled) appState.isForgotPasswordMode = false;
-      el.registerForm.classList.toggle("hidden", !enabled);
-      el.forgotPasswordForm.classList.add("hidden");
-      el.loginFields.classList.toggle("hidden", enabled);
-      el.loginBtn.classList.toggle("hidden", enabled);
-      el.showRegisterBtn.classList.toggle("hidden", enabled);
-      el.forgotPasswordBtn.classList.toggle("hidden", enabled);
-      el.authModeHint.textContent = enabled
-        ? "Điền thông tin để tạo tài khoản mới."
-        : "Đăng nhập để quản lý tiết kiệm và giao dịch của bạn.";
-      setLoginError("");
-    }
-
-    function setForgotPasswordMode(enabled) {
-      appState.isForgotPasswordMode = enabled;
-      if (enabled) appState.isRegisterMode = false;
-      el.forgotPasswordForm.classList.toggle("hidden", !enabled);
-      el.registerForm.classList.add("hidden");
-      el.loginFields.classList.toggle("hidden", enabled);
-      el.loginBtn.classList.toggle("hidden", enabled);
-      el.showRegisterBtn.classList.toggle("hidden", enabled);
-      el.forgotPasswordBtn.classList.toggle("hidden", enabled);
-      el.authModeHint.textContent = enabled
-        ? "Xác thực email và CMND/CCCD để đặt lại mật khẩu."
-        : "Đăng nhập để quản lý tiết kiệm và giao dịch của bạn.";
-      setLoginError("");
-    }
-
-    function updateAuthView() {
-      const loggedIn = !!appState.token;
-      el.loginPage.classList.toggle("hidden", loggedIn);
-      el.dashboardPage.classList.toggle("hidden", !loggedIn);
-      if (!loggedIn) {
-        el.loginUsername.value = appState.username || "";
-        el.loginPassword.value = "";
-        setRegisterMode(false);
-        setForgotPasswordMode(false);
       }
     }
 
@@ -2501,7 +2386,7 @@
         <div class="account-tile">
           <div class="account-head">
             <div>
-              <div class="account-title">${escapeHtml(item.product_name)}</div>
+              <div class="account-title">${escapeHtml(productDisplayName(item.product_name))}</div>
               <div class="account-sub">Mã sổ #${escapeHtml(item.account_id)} · ${escapeHtml(item.status)}</div>
             </div>
             <div class="tile-icon" style="margin:0;width:52px;height:52px;"><i class="fa-solid fa-piggy-bank"></i></div>
@@ -2512,6 +2397,7 @@
             <span class="chip">Kỳ hạn ${escapeHtml(termLabel(item.term_months))}</span>
             <span class="chip">Mở ngày ${escapeHtml(item.opened_at)}</span>
           </div>
+          ${renderGrowthChart(item)}
           ${item.status === "ACTIVE" ? `
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
               <button
@@ -2570,7 +2456,7 @@
 
     function renderProducts() {
       el.openSavingsProduct.innerHTML = appState.products.length
-        ? appState.products.map((item) => `<option value="${item.product_id}">${escapeHtml(item.name)} · ${escapeHtml(item.interest_rate)}%/năm · ${escapeHtml(termLabel(item.term_months))}</option>`).join("")
+        ? appState.products.map((item) => `<option value="${item.product_id}">${escapeHtml(productDisplayName(item.name))} · ${escapeHtml(item.interest_rate)}%/năm · ${escapeHtml(termLabel(item.term_months))}</option>`).join("")
         : `<option value="">Chưa có gói tiết kiệm</option>`;
 
       el.productsCountText.textContent = `${appState.products.length} gói`;
@@ -2583,7 +2469,7 @@
         <div class="product-tile">
           <div class="product-head">
             <div>
-              <div class="product-title">${escapeHtml(item.name)}</div>
+              <div class="product-title">${escapeHtml(productDisplayName(item.name))}</div>
               <div class="product-sub">${escapeHtml(holdLabel(item))}</div>
             </div>
             <div class="product-id">#${escapeHtml(item.product_id)}</div>
@@ -2613,7 +2499,7 @@
           <div class="transaction-item">
             <div>
               <div class="transaction-title">${escapeHtml(formatTransactionType(tx.transaction_type))}</div>
-              <div class="transaction-sub">#${escapeHtml(tx.transaction_id)}${tx.product_name ? ` · ${escapeHtml(tx.product_name)}` : ""}${tx.account_id ? ` · Sổ ${escapeHtml(tx.account_id)}` : ""}</div>
+              <div class="transaction-sub">#${escapeHtml(tx.transaction_id)}${tx.product_name ? ` · ${escapeHtml(productDisplayName(tx.product_name))}` : ""}${tx.account_id ? ` · Sổ ${escapeHtml(tx.account_id)}` : ""}</div>
               <div class="transaction-time">${escapeHtml(tx.created_at || "")}</div>
             </div>
             <div class="transaction-right">
@@ -2638,7 +2524,9 @@
         { label: "Ngày tạo", value: me.created_at || "-" },
         { label: "Số dư ví", value: money(me.wallet_balance || 0) },
         { label: "Ví khả dụng", value: money(dashboard.available_wallet_balance ?? me.wallet_balance ?? 0) },
-        { label: "Tiền chờ duyệt", value: money(dashboard.pending_reserved_amount || 0) }
+        { label: "Tiền chờ duyệt", value: money(dashboard.pending_reserved_amount || 0) },
+        { label: "Lãi dự tính", value: money(dashboard.estimated_interest_total || 0) },
+        { label: "Giá trị tiết kiệm hiện tại", value: money(dashboard.total_savings_current_value ?? dashboard.total_savings_principal ?? 0) }
       ];
 
       el.profileGrid.innerHTML = items.map((item) => `
@@ -2654,7 +2542,12 @@
       const dashboard = appState.dashboard || {};
       const displayName = me.full_name || dashboard.full_name || "Quý khách";
       const email = me.email || dashboard.email || "Khách hàng cá nhân";
-      const totalBalance = Number(dashboard.wallet_balance || 0) + Number(dashboard.total_savings_principal || 0);
+      const totalBalance = Number(
+        dashboard.total_assets_current_value
+        ?? (Number(dashboard.available_wallet_balance ?? dashboard.wallet_balance ?? 0)
+          + Number(dashboard.total_savings_principal || 0)
+          + Number(dashboard.estimated_interest_total || 0))
+      );
       const accountNumber = me.account_number || dashboard.account_number || "-";
       const availableWallet = Number(dashboard.available_wallet_balance ?? dashboard.wallet_balance ?? 0);
       const pendingReserved = Number(dashboard.pending_reserved_amount || 0);
@@ -2709,8 +2602,45 @@
       renderTransactions(el.transactionsList, appState.transactions);
       renderProfile();
       el.transactionsCountText.textContent = `${appState.transactions.length} giao dịch`;
-      updateAuthView();
       switchPage(appState.currentPage, false);
+    }
+
+    function pulseNotificationBell() {
+      el.notificationBtn?.classList.remove("realtime-pulse");
+      void el.notificationBtn?.offsetWidth;
+      el.notificationBtn?.classList.add("realtime-pulse");
+      setTimeout(() => el.notificationBtn?.classList.remove("realtime-pulse"), 1600);
+    }
+
+    let _sseRetryDelay = 3000;
+    function connectRealtime() {
+      if (!appState.token || appState.eventSource) return;
+      const baseUrl = API_BASE_CANDIDATES[0] || "";
+      const source = new EventSource(`${baseUrl}/api/events?token=${encodeURIComponent(appState.token)}`);
+      appState.eventSource = source;
+
+      source.addEventListener("ready", () => { _sseRetryDelay = 3000; });
+
+      source.addEventListener("savings", async (event) => {
+        const data = JSON.parse(event.data || "{}");
+        pulseNotificationBell();
+        showToast(data.message || "Có cập nhật mới từ hệ thống.");
+        await fetchAllClientData();
+      });
+
+      source.onerror = () => {
+        source.close();
+        appState.eventSource = null;
+        if (appState.token) {
+          setTimeout(connectRealtime, _sseRetryDelay);
+          _sseRetryDelay = Math.min(_sseRetryDelay * 2, 30000); // exponential backoff, max 30s
+        }
+      };
+    }
+
+    function disconnectRealtime() {
+      appState.eventSource?.close();
+      appState.eventSource = null;
     }
 
     function switchPage(page, rerenderNav = true) {
@@ -2756,103 +2686,6 @@
         showToast(error.message || "Không thể tải dữ liệu từ server.", "error");
       } finally {
         setLoading(false);
-      }
-    }
-
-    async function handleRegister() {
-      const email = el.registerEmail.value.trim();
-      const password = el.registerPassword.value;
-      const confirmPassword = el.registerConfirmPassword.value;
-      const fullName = el.registerFullName.value.trim();
-      const identityCard = el.registerIdentityCard.value.trim();
-      setLoginError("");
-
-      if (!email || !password || !confirmPassword || !fullName || !identityCard) {
-        setLoginError("Vui lòng nhập đầy đủ email, mật khẩu, họ tên và CMND/CCCD để đăng ký.");
-        return;
-      }
-      if (password !== confirmPassword) {
-        setLoginError("Mật khẩu xác nhận không khớp.");
-        return;
-      }
-
-      try {
-        el.registerBtn.disabled = true;
-        el.registerBtn.textContent = "Đang tạo tài khoản";
-
-        const res = await apiRequest("/api/auth/register", {
-          method: "POST",
-          body: JSON.stringify({
-            email,
-            password,
-            full_name: fullName,
-            identity_card: identityCard,
-            role: "CUSTOMER"
-          })
-        });
-
-        el.loginUsername.value = email;
-        el.loginPassword.value = "";
-        el.registerEmail.value = "";
-        el.registerPassword.value = "";
-        el.registerConfirmPassword.value = "";
-        el.registerFullName.value = "";
-        el.registerIdentityCard.value = "";
-        setRegisterMode(false);
-        showToast(res.message || "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
-        setLoginError(res.message || "Đăng ký thành công. Bạn có thể đăng nhập ngay.");
-      } catch (error) {
-        showToast(error.message || "Đăng ký thất bại.", "error");
-        setLoginError(error.message || "Đăng ký thất bại.");
-      } finally {
-        el.registerBtn.disabled = false;
-        el.registerBtn.textContent = "Tạo tài khoản";
-      }
-    }
-
-    async function handleForgotPassword() {
-      const email = el.forgotEmail.value.trim();
-      const identityCard = el.forgotIdentityCard.value.trim();
-      const newPassword = el.forgotNewPassword.value;
-      const confirmPassword = el.forgotConfirmPassword.value;
-      setLoginError("");
-
-      if (!email || !identityCard || !newPassword || !confirmPassword) {
-        setLoginError("Vui lòng nhập đầy đủ thông tin để đặt lại mật khẩu.");
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        setLoginError("Mật khẩu xác nhận không khớp.");
-        return;
-      }
-
-      try {
-        el.submitForgotPasswordBtn.disabled = true;
-        el.submitForgotPasswordBtn.textContent = "Đang cập nhật mật khẩu";
-        await apiRequest("/api/auth/forgot-password", {
-          method: "POST",
-          body: JSON.stringify({
-            email,
-            identity_card: identityCard,
-            new_password: newPassword
-          })
-        });
-
-        el.loginUsername.value = email;
-        el.loginPassword.value = "";
-        el.forgotEmail.value = "";
-        el.forgotIdentityCard.value = "";
-        el.forgotNewPassword.value = "";
-        el.forgotConfirmPassword.value = "";
-        setForgotPasswordMode(false);
-        showToast("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.");
-        setLoginError("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập ngay.");
-      } catch (error) {
-        showToast(error.message || "Không thể đặt lại mật khẩu.", "error");
-        setLoginError(error.message || "Không thể đặt lại mật khẩu.");
-      } finally {
-        el.submitForgotPasswordBtn.disabled = false;
-        el.submitForgotPasswordBtn.textContent = "Đặt lại mật khẩu";
       }
     }
 
@@ -2994,54 +2827,8 @@
       }
     }
 
-    async function handleLogin() {
-      const username = el.loginUsername.value.trim();
-      const password = el.loginPassword.value;
-      setLoginError("");
-
-      if (!username || !password) {
-        setLoginError("Vui lòng nhập tên đăng nhập và mật khẩu.");
-        return;
-      }
-
-      try {
-        el.loginBtn.disabled = true;
-        el.loginBtn.textContent = "Đang đăng nhập";
-
-        const res = await apiRequest("/api/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email: username, password })
-        });
-
-        const token = res.token || res.access_token;
-        if (!token) throw new Error("Server không trả về token đăng nhập.");
-        if (res.role !== "CUSTOMER") {
-          sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ khách hàng.");
-          window.location.replace(roleHome(res.role));
-          return;
-        }
-
-        appState.token = token;
-        appState.role = res.role || "CUSTOMER";
-        appState.username = username;
-        localStorage.setItem("token", token);
-        localStorage.setItem("role", appState.role);
-        localStorage.setItem("username", username);
-        localStorage.setItem("client_token", token);
-        localStorage.setItem("client_username", username);
-        showToast("Đăng nhập khách hàng thành công.");
-
-        updateAuthView();
-        await fetchAllClientData();
-      } catch (error) {
-        setLoginError(error.message || "Đăng nhập thất bại.");
-      } finally {
-        el.loginBtn.disabled = false;
-        el.loginBtn.textContent = "Đăng nhập";
-      }
-    }
-
     function handleLogout() {
+      disconnectRealtime();
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("username");
@@ -3058,29 +2845,6 @@
     }
 
     function bindEvents() {
-      el.loginUsername.value = appState.username || "";
-      el.loginBtn.addEventListener("click", handleLogin);
-      el.showRegisterBtn.addEventListener("click", () => {
-        setRegisterMode(true);
-      });
-      el.cancelRegisterBtn.addEventListener("click", () => setRegisterMode(false));
-      el.forgotPasswordBtn?.addEventListener("click", () => setForgotPasswordMode(true));
-      el.cancelForgotPasswordBtn?.addEventListener("click", () => setForgotPasswordMode(false));
-      el.registerBtn.addEventListener("click", handleRegister);
-      el.submitForgotPasswordBtn?.addEventListener("click", handleForgotPassword);
-      el.loginPassword.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") handleLogin();
-      });
-      [el.registerEmail, el.registerPassword, el.registerConfirmPassword, el.registerFullName, el.registerIdentityCard].forEach((input) => {
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") handleRegister();
-        });
-      });
-      [el.forgotEmail, el.forgotIdentityCard, el.forgotNewPassword, el.forgotConfirmPassword].filter(Boolean).forEach((input) => {
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") handleForgotPassword();
-        });
-      });
       el.logoutBtn.addEventListener("click", handleLogout);
       el.openSavingsBtn.addEventListener("click", handleOpenSavingsRequest);
       el.transferBtn.addEventListener("click", handleTransferRequest);
@@ -3134,7 +2898,12 @@
     }
 
     async function init() {
+      // Single login: if no token redirect to central login
       if (!appState.token) {
+        const flash = sessionStorage.getItem("flash_message");
+        if (flash) {
+          sessionStorage.setItem("flash_message", flash);
+        }
         window.location.replace("/login");
         return;
       }
@@ -3145,19 +2914,18 @@
       }
       bindEvents();
       renderServices();
-      updateAuthView();
+      // updateAuthView removed
       const flash = sessionStorage.getItem("flash_message");
       if (flash) {
         showToast(flash, "error");
         sessionStorage.removeItem("flash_message");
       }
-      if (appState.token) {
-        try {
-          await fetchAllClientData();
-        } catch (error) {
-          console.error(error);
-          handleLogout();
-        }
+      connectRealtime();
+      try {
+        await fetchAllClientData();
+      } catch (error) {
+        console.error(error);
+        handleLogout();
       }
     }
 

@@ -24,21 +24,22 @@ def register():
     password      = data.get('password')
     full_name     = data.get('full_name')
     identity_card = data.get('identity_card')
+    address       = data.get('address', '')
 
     if not email or not password or not full_name:
         return jsonify({'message': 'Vui lòng điền đủ thông tin!'}), 400
 
     hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
     account_number = _generate_unique_account_number(db_cursor)
-    welcome_bonus = 100000
+    welcome_bonus = 10000000
 
     try:
-        sql = """INSERT INTO users (email, password_hash, full_name, identity_card, account_number, wallet_balance)
-                 VALUES (%s, %s, %s, %s, %s, %s)"""
-        db_cursor.execute(sql, (email, hashed_password, full_name, identity_card, account_number, welcome_bonus))
+        sql = """INSERT INTO users (email, password_hash, full_name, identity_card, account_number, address, wallet_balance)
+                 VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+        db_cursor.execute(sql, (email, hashed_password, full_name, identity_card, account_number, address, welcome_bonus))
         db_conn.commit()
         return jsonify({
-            'message': 'Đăng ký thành công! Tài khoản được tặng 100.000 VND.',
+            'message': 'Đăng ký thành công! Tài khoản được tặng 10.000.000 VND.',
             'account_number': account_number,
             'welcome_bonus': welcome_bonus
         }), 201

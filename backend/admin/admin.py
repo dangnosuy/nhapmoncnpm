@@ -85,9 +85,9 @@ def get_all_users():
     status_filter = request.args.get('status')   # VD: ?status=ACTIVE
     search = request.args.get('search')          # VD: ?search=Nguyen
 
+    # NOTE: wallet_balance is NOT exposed to Admin – it belongs to the Client domain.
     query = """
-        SELECT user_id, email, full_name, identity_card, role,
-               wallet_balance, status, created_at
+        SELECT user_id, email, full_name, identity_card, address, role, status, created_at
         FROM users
         WHERE 1=1
     """
@@ -118,8 +118,8 @@ def get_all_users():
                 'email': row[1],
                 'full_name': row[2],
                 'identity_card': row[3],
-                'role': row[4],
-                'wallet_balance': float(row[5]),
+                'address': row[4] or '',
+                'role': row[5],
                 'status': row[6],
                 'created_at': str(row[7])
             }
@@ -139,9 +139,9 @@ def get_all_users():
 def get_user_detail(user_id):
     """Xem chi tiết thông tin một người dùng."""
     try:
+        # NOTE: wallet_balance NOT exposed – belongs to Client domain only.
         db_cursor.execute("""
-            SELECT user_id, email, full_name, identity_card, role,
-                   wallet_balance, status, created_at
+            SELECT user_id, email, full_name, identity_card, address, role, status, created_at
             FROM users WHERE user_id = %s
         """, (user_id,))
         row = db_cursor.fetchone()
@@ -154,16 +154,15 @@ def get_user_detail(user_id):
             'email': row[1],
             'full_name': row[2],
             'identity_card': row[3],
-            'role': row[4],
-            'wallet_balance': float(row[5]),
+            'address': row[4] or '',
+            'role': row[5],
             'status': row[6],
             'created_at': str(row[7])
         }
 
-        # Lấy thêm danh sách sổ tiết kiệm của user này
+        # Lấy thêm danh sách sổ tiết kiệm của user này, không lộ số dư từng sổ.
         db_cursor.execute("""
-            SELECT s.account_id, p.name AS product_name, s.principal_balance,
-                   s.opened_at, s.status
+            SELECT s.account_id, p.name AS product_name, s.opened_at, s.status
             FROM savings_accounts s
             JOIN savings_products p ON s.product_id = p.product_id
             WHERE s.user_id = %s
@@ -175,9 +174,8 @@ def get_user_detail(user_id):
             {
                 'account_id': sr[0],
                 'product_name': sr[1],
-                'principal_balance': float(sr[2]),
-                'opened_at': str(sr[3]),
-                'status': sr[4]
+                'opened_at': str(sr[2]),
+                'status': sr[3]
             }
             for sr in savings_rows
         ]

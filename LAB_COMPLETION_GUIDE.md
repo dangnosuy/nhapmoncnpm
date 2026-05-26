@@ -59,7 +59,8 @@ mysql -u smart_savings -p'SmartSavings@2026!' -e "SELECT 1;"
 Terminal 1, chạy backend:
 
 ```bash
-PYTHONPATH=backend python backend/app.py
+cd backend
+python app.py
 ```
 
 Backend chạy tại:

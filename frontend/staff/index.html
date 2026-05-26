@@ -90,6 +90,26 @@
     }
     .toast.success { background: #dcfce7; }
     .toast.error { background: #fee2e2; }
+    .notify-btn {
+      width: 44px;
+      height: 44px;
+      background: #fff;
+      border: 2px solid var(--line);
+      box-shadow: 4px 4px 0 var(--line);
+      font-size: 20px;
+      font-weight: 900;
+    }
+    .notify-btn.realtime-pulse {
+      animation: bellShake .7s ease-in-out 2;
+      background: #fef3c7;
+    }
+    @keyframes bellShake {
+      0%, 100% { transform: rotate(0); }
+      20% { transform: rotate(-14deg); }
+      40% { transform: rotate(12deg); }
+      60% { transform: rotate(-8deg); }
+      80% { transform: rotate(6deg); }
+    }
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -161,28 +181,7 @@
   </style>
 </head>
 <body>
-  <section id="loginPage" class="login">
-    <div class="login-copy">
-      <h1>Staff Operations Console</h1>
-      <p>Không gian xử lý nghiệp vụ tại quầy: duyệt yêu cầu, tra cứu sổ tiết kiệm, theo dõi cân đối hệ thống và lập báo cáo BM5.</p>
-    </div>
-    <form id="loginForm" class="login-card">
-      <h2>Đăng nhập nhân viên</h2>
-      <small>Chỉ tài khoản STAFF hoặc ADMIN được truy cập phân hệ này.</small>
-      <div class="field">
-        <label>Email</label>
-        <input id="email" type="email" value="staff@gmail.com" required>
-      </div>
-      <div class="field">
-        <label>Mật khẩu</label>
-        <input id="password" type="password" value="staff123" required>
-      </div>
-      <button class="primary" style="width:100%;margin-top:22px;" type="submit">Đăng nhập</button>
-      <div id="loginError" class="error hidden"></div>
-    </form>
-  </section>
-
-  <section id="appShell" class="shell hidden">
+  <section id="appShell" class="shell">
     <aside>
       <div class="brand">
         <strong>Quản lý sổ tiết kiệm</strong>
@@ -204,7 +203,10 @@
           <h1 id="pageTitle">Tổng quan</h1>
           <p id="pageSub">Theo dõi nhanh giao dịch chờ duyệt và cân đối hệ thống.</p>
         </div>
-        <button id="refreshBtn" class="ghost">Làm mới dữ liệu</button>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <button id="staffNotifyBtn" class="notify-btn" type="button" title="Thông báo">!</button>
+          <button id="refreshBtn" class="ghost">Làm mới dữ liệu</button>
+        </div>
       </div>
 
       <section id="page-dashboard" class="page">
@@ -258,7 +260,7 @@
       <section id="page-customers" class="page hidden">
         <div class="panel">
           <table>
-            <thead><tr><th>Mã KH</th><th>Họ tên</th><th>Email</th><th>CMND/CCCD</th><th>Số dư ví</th><th>Trạng thái</th><th>Ngày tạo</th></tr></thead>
+            <thead><tr><th>Mã KH</th><th>Họ tên</th><th>Email</th><th>CMND/CCCD</th><th>Địa chỉ</th><th>Trạng thái</th><th>Ngày tạo</th></tr></thead>
             <tbody id="customersBody"></tbody>
           </table>
         </div>
@@ -267,7 +269,7 @@
       <section id="page-accounts" class="page hidden">
         <div class="panel">
           <table>
-            <thead><tr><th>Mã sổ</th><th>Khách hàng</th><th>Loại tiết kiệm</th><th>Số dư gốc</th><th>Lãi suất</th><th>Kỳ hạn</th><th>Ngày mở</th><th>Trạng thái</th></tr></thead>
+            <thead><tr><th>Mã sổ</th><th>Khách hàng</th><th>Loại tiết kiệm</th><th>Lãi suất</th><th>Kỳ hạn</th><th>Ngày mở</th><th>Đáo hạn</th><th>Thời gian giữ</th><th>Trạng thái</th></tr></thead>
             <tbody id="accountsBody"></tbody>
           </table>
         </div>
@@ -279,11 +281,11 @@
             <h3 style="margin-top:0;">BM5.1 - Doanh số ngày</h3>
             <div class="toolbar">
               <div class="field"><label>Ngày</label><input id="dailyDate" type="date"></div>
-              <button id="loadDailyBtn" class="primary">Tải báo cáo</button>
+              <button id="loadDailyBtn" class="primary">Áp dụng lọc</button>
             </div>
             <div class="panel">
               <table>
-                <thead><tr><th>Loại tiết kiệm</th><th>Tổng thu</th><th>Tổng chi</th><th>Chênh lệch</th></tr></thead>
+                <thead><tr><th>Ngày</th><th>Loại tiết kiệm</th><th>Tổng thu</th><th>Tổng chi</th><th>Chênh lệch</th></tr></thead>
                 <tbody id="dailyBody"></tbody>
               </table>
             </div>
@@ -292,7 +294,7 @@
             <h3 style="margin-top:0;">BM5.2 - Mở/đóng sổ tháng</h3>
             <div class="toolbar">
               <div class="field"><label>Tháng</label><input id="monthInput" type="month"></div>
-              <button id="loadMonthlyBtn" class="primary">Tải báo cáo</button>
+              <button id="loadMonthlyBtn" class="primary">Áp dụng lọc</button>
             </div>
             <div class="panel">
               <table>
@@ -323,6 +325,9 @@
     function roleHome(role) {
       return ROLE_HOME[role] || "/login";
     }
+    const sharedToken = localStorage.getItem("token") || localStorage.getItem("staff_token") || "";
+    const sharedRole = localStorage.getItem("role") || localStorage.getItem("staff_role") || "";
+
     function showToast(message, type = "success") {
       document.querySelector(".toast")?.remove();
       const toast = document.createElement("div");
@@ -332,14 +337,14 @@
       setTimeout(() => toast.remove(), 3200);
     }
 
-    const sharedToken = localStorage.getItem("token") || localStorage.getItem("staff_token") || "";
-    const sharedRole = localStorage.getItem("role") || localStorage.getItem("staff_role") || "";
-    const canRenderStaff = sharedToken && sharedRole === "STAFF";
-    if (!sharedToken) {
-      window.location.replace("/login");
-    } else if (sharedRole !== "STAFF") {
-      sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ Staff.");
-      window.location.replace(roleHome(sharedRole));
+    // Single Login: redirect to /login if no valid token
+    if (!sharedToken || sharedRole !== "STAFF") {
+      if (sharedToken && sharedRole) {
+        sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ Staff.");
+        window.location.replace(roleHome(sharedRole));
+      } else {
+        window.location.replace("/login");
+      }
     }
 
     const state = {
@@ -349,7 +354,11 @@
       customers: [],
       accounts: [],
       balance: null,
+      reportPoller: null,
+      dailyDateFilter: "",
+      monthFilter: "",
       pendingAction: null,
+      eventSource: null,
       page: "dashboard"
     };
 
@@ -371,12 +380,7 @@
     };
 
     const el = {
-      loginPage: document.getElementById("loginPage"),
       appShell: document.getElementById("appShell"),
-      loginForm: document.getElementById("loginForm"),
-      loginError: document.getElementById("loginError"),
-      email: document.getElementById("email"),
-      password: document.getElementById("password"),
       pageTitle: document.getElementById("pageTitle"),
       pageSub: document.getElementById("pageSub"),
       pendingCount: document.getElementById("pendingCount"),
@@ -393,6 +397,7 @@
       monthInput: document.getElementById("monthInput"),
       dailyBody: document.getElementById("dailyBody"),
       monthlyBody: document.getElementById("monthlyBody"),
+      staffNotifyBtn: document.getElementById("staffNotifyBtn"),
       confirmModal: document.getElementById("confirmModal"),
       confirmModalText: document.getElementById("confirmModalText"),
       cancelConfirmBtn: document.getElementById("cancelConfirmBtn"),
@@ -409,7 +414,11 @@
 
     function termLabel(termMonths) {
       const term = Number(termMonths || 0);
-      return term === 0 ? "Không kỳ hạn" : `${term} phút`;
+      return term === 0 ? "Không kỳ hạn" : `${term} tháng`;
+    }
+
+    function productDisplayName(name) {
+      return String(name || "").replaceAll("phút", "tháng");
     }
 
     async function api(path, options = {}) {
@@ -422,12 +431,7 @@
       if (!response.ok) throw new Error(data.message || data.error || "Không thể kết nối server.");
       return data;
     }
-
-    function setAuthView() {
-      const loggedIn = !!state.token;
-      el.loginPage.classList.toggle("hidden", loggedIn);
-      el.appShell.classList.toggle("hidden", !loggedIn);
-    }
+    // Removed setAuthView as login is unified
 
     function setPage(page) {
       state.page = page;
@@ -455,7 +459,7 @@
         <tr>
           <td>#${escapeHtml(tx.transaction_id)}</td>
           <td>${escapeHtml(tx.customer_name)}</td>
-          ${compact ? "" : `<td>${tx.account_id ? `Sổ #${escapeHtml(tx.account_id)}` : escapeHtml(tx.target_product_name || "-")}</td>`}
+          ${compact ? "" : `<td>${tx.account_id ? `Sổ #${escapeHtml(tx.account_id)}` : escapeHtml(productDisplayName(tx.target_product_name || "-"))}</td>`}
           <td>${escapeHtml(typeMap[tx.transaction_type] || tx.transaction_type)}</td>
           <td>${money(tx.amount)}</td>
           ${compact ? "" : `<td>${money(tx.interest_amount)}</td>`}
@@ -500,7 +504,7 @@
           <td><strong>${escapeHtml(user.full_name)}</strong></td>
           <td>${escapeHtml(user.email)}</td>
           <td>${escapeHtml(user.identity_card || "-")}</td>
-          <td>${money(user.wallet_balance)}</td>
+          <td>${escapeHtml(user.address || "-")}</td>
           <td>${escapeHtml(user.status)}</td>
           <td>${escapeHtml(user.created_at)}</td>
         </tr>
@@ -512,11 +516,12 @@
         <tr>
           <td>#${escapeHtml(account.account_id)}</td>
           <td>${escapeHtml(account.customer_name)}</td>
-          <td>${escapeHtml(account.product_name)}</td>
-          <td>${money(account.principal_balance)}</td>
+          <td>${escapeHtml(productDisplayName(account.product_name))}</td>
           <td>${escapeHtml(account.interest_rate)}%/năm</td>
           <td>${escapeHtml(termLabel(account.term_months))}</td>
           <td>${escapeHtml(account.opened_at)}</td>
+          <td>${account.demo_maturity_date ? escapeHtml(account.demo_maturity_date) : "-"}</td>
+          <td>${account.demo_elapsed ? escapeHtml(account.demo_elapsed) : "-"}</td>
           <td><span class="status ${account.status === "ACTIVE" ? "APPROVED" : "REJECTED"}">${escapeHtml(account.status)}</span></td>
         </tr>
       `), "Chưa có sổ tiết kiệm.");
@@ -527,6 +532,39 @@
       renderTransactions();
       renderCustomers();
       renderAccounts();
+    }
+
+    function pulseNotificationBell() {
+      el.staffNotifyBtn?.classList.remove("realtime-pulse");
+      void el.staffNotifyBtn?.offsetWidth;
+      el.staffNotifyBtn?.classList.add("realtime-pulse");
+      setTimeout(() => el.staffNotifyBtn?.classList.remove("realtime-pulse"), 1600);
+    }
+
+    let _sseRetryDelay = 3000;
+    function connectRealtime() {
+      if (!state.token || state.eventSource) return;
+      state.eventSource = new EventSource(`/api/events?token=${encodeURIComponent(state.token)}`);
+      state.eventSource.addEventListener("ready", () => { _sseRetryDelay = 3000; });
+      state.eventSource.addEventListener("savings", async (event) => {
+        const data = JSON.parse(event.data || "{}");
+        pulseNotificationBell();
+        showToast(data.message || "Có cập nhật mới từ hệ thống.");
+        await loadAll();
+      });
+      state.eventSource.onerror = () => {
+        state.eventSource.close();
+        state.eventSource = null;
+        if (state.token) {
+          setTimeout(connectRealtime, _sseRetryDelay);
+          _sseRetryDelay = Math.min(_sseRetryDelay * 2, 30000); // exponential backoff, max 30s
+        }
+      };
+    }
+
+    function disconnectRealtime() {
+      state.eventSource?.close();
+      state.eventSource = null;
     }
 
     async function loadTransactions() {
@@ -557,10 +595,13 @@
 
     async function loadDailyReport() {
       try {
-        const res = await api(`/api/reports/daily-activity?date=${encodeURIComponent(el.dailyDate.value)}`);
+        const params = new URLSearchParams();
+        if (state.dailyDateFilter) params.set("date", state.dailyDateFilter);
+        const query = params.toString();
+        const res = await api(`/api/reports/daily-activity${query ? `?${query}` : ""}`);
         renderRows(el.dailyBody, (res.items || []).map((item) => `
-          <tr><td>${escapeHtml(item.product_name)}</td><td>${money(item.total_in)}</td><td>${money(item.total_out)}</td><td>${money(item.difference)}</td></tr>
-        `), "Không có dữ liệu cho ngày này.");
+          <tr><td>${escapeHtml(item.date || "-")}</td><td>${escapeHtml(item.product_name)}</td><td>${money(item.total_in)}</td><td>${money(item.total_out)}</td><td>${money(item.difference)}</td></tr>
+        `), "Không có dữ liệu báo cáo.");
       } catch (error) {
         showToast(error.message, "error");
       }
@@ -568,45 +609,35 @@
 
     async function loadMonthlyReport() {
       try {
-        const res = await api(`/api/reports/monthly-open-close?month=${encodeURIComponent(el.monthInput.value)}`);
+        const params = new URLSearchParams();
+        if (state.monthFilter) params.set("month", state.monthFilter);
+        const query = params.toString();
+        const res = await api(`/api/reports/monthly-open-close${query ? `?${query}` : ""}`);
         renderRows(el.monthlyBody, (res.items || []).map((item) => `
           <tr><td>${escapeHtml(item.date)}</td><td>${escapeHtml(item.product_name)}</td><td>${escapeHtml(item.opened_count)}</td><td>${escapeHtml(item.closed_count)}</td><td>${escapeHtml(item.difference)}</td></tr>
-        `), "Không có dữ liệu cho tháng này.");
+        `), "Không có dữ liệu báo cáo.");
       } catch (error) {
         showToast(error.message, "error");
       }
     }
 
-    el.loginForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      el.loginError.classList.add("hidden");
-      try {
-        const res = await api("/api/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email: el.email.value.trim(), password: el.password.value })
-        });
-        if (res.role !== "STAFF") throw new Error("Tài khoản này không có quyền truy cập phân hệ Staff.");
-        state.token = res.token;
-        state.role = res.role;
-        localStorage.setItem("token", res.token);
-        localStorage.setItem("role", res.role);
-        localStorage.setItem("username", el.email.value.trim());
-        localStorage.setItem("staff_token", res.token);
-        localStorage.setItem("staff_role", res.role);
-        showToast("Đăng nhập Staff thành công.");
-        setAuthView();
-        setPage("dashboard");
-        await loadAll();
-      } catch (error) {
-        el.loginError.textContent = error.message;
-        el.loginError.classList.remove("hidden");
-      }
-    });
+    async function loadReports() {
+      await Promise.all([loadDailyReport(), loadMonthlyReport()]);
+    }
+
+    function startReportPolling() {
+      if (state.reportPoller) return;
+      loadReports();
+      state.reportPoller = window.setInterval(loadReports, 12000);
+    }
+
+    // Removed old login form event listener
 
     document.querySelectorAll(".nav button").forEach((btn) => btn.addEventListener("click", () => setPage(btn.dataset.page)));
     document.getElementById("logoutBtn").addEventListener("click", () => {
       state.token = "";
       state.role = "";
+      disconnectRealtime();
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("username");
@@ -642,21 +673,28 @@
         el.submitConfirmBtn.disabled = false;
       }
     });
-    document.getElementById("loadDailyBtn").addEventListener("click", loadDailyReport);
-    document.getElementById("loadMonthlyBtn").addEventListener("click", loadMonthlyReport);
+    document.getElementById("loadDailyBtn").addEventListener("click", () => {
+      state.dailyDateFilter = el.dailyDate.value || "";
+      loadDailyReport();
+    });
+    document.getElementById("loadMonthlyBtn").addEventListener("click", () => {
+      state.monthFilter = el.monthInput.value || "";
+      loadMonthlyReport();
+    });
 
-    const now = new Date();
-    el.dailyDate.value = now.toISOString().slice(0, 10);
-    el.monthInput.value = now.toISOString().slice(0, 7);
-    if (canRenderStaff) {
-      setAuthView();
+    el.dailyDate.value = "";
+    el.monthInput.value = "";
+    // Auto-run if token valid (single login flow)
+    if (state.token && state.role === "STAFF") {
       const flash = sessionStorage.getItem("flash_message");
       if (flash) {
         showToast(flash, "error");
         sessionStorage.removeItem("flash_message");
       }
       setPage("dashboard");
-      if (state.token) loadAll();
+      connectRealtime();
+      loadAll();
+      startReportPolling();
     }
   </script>
 </body>

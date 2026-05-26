@@ -100,7 +100,7 @@ export default function Login() {
         <div className="ds-login-strip">
           <span>RESTful API</span>
           <span>Role-based access</span>
-          <span>100.000 VND welcome bonus</span>
+          <span>10.000.000 VND welcome bonus</span>
         </div>
       </section>
 
@@ -157,7 +157,7 @@ export default function Login() {
           ) : (
             <form onSubmit={handleRegister}>
               <h2>Tạo tài khoản</h2>
-              <p className="ds-kicker">Khách hàng mới được tặng 100.000 VND</p>
+              <p className="ds-kicker">Khách hàng mới được tặng 10.000.000 VND</p>
 
               <div className="ds-field">
                 <label>Họ và tên</label>

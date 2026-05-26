@@ -1,29 +1,37 @@
 from flask import Blueprint, request, jsonify
 from common.db import db_cursor, db_conn
+from common.events import publish_event
 from common.requireRole import require_role
 from common.savings_rules import (
     MIN_OPEN_AMOUNT_KEY,
+    MIN_OPEN_AMOUNT_FALLBACK,
     MIN_SAVINGS_DEPOSIT_AMOUNT_KEY,
     NON_TERM_MIN_DAYS_KEY,
     calculate_interest,
+    check_auto_rollover,
     days_between,
+    demo_elapsed_display,
+    demo_maturity_date,
+    get_applicable_interest_rate,
     get_float_config,
     get_int_config,
     rule_days_to_demo_days,
     term_days,
 )
 
-MIN_OPEN_AMOUNT_FALLBACK = 50000
-
 
 def _term_label(term_months):
     term_value = int(term_months or 0)
-    return "không kỳ hạn" if term_value == 0 else f"{term_value} phút"
+    return "không kỳ hạn" if term_value == 0 else f"{term_value} tháng"
 
 
 def _rule_days_label(rule_days):
-    demo_minutes = max(float(rule_days or 0), 0) / 30
-    return f"{demo_minutes:g} phút"
+    return f"{max(float(rule_days or 0), 0):g} ngày"
+
+
+def _product_display_name(name):
+    return str(name or "").replace("phút", "tháng")
+
 
 transactions_bp = Blueprint('transactions', __name__)
 
@@ -74,7 +82,7 @@ def get_all_transactions():
                 'customer_name': row[1],
                 'account_id': row[2],
                 'target_product_id': row[3],
-                'target_product_name': row[4],
+                'target_product_name': _product_display_name(row[4]),
                 'amount': float(row[5]),
                 'transaction_type': row[6],
                 'status': row[7],
@@ -93,7 +101,7 @@ def get_all_transactions():
 
 
 @transactions_bp.route('/api/transactions/<int:transaction_id>/approve', methods=['PUT'])
-@require_role(['STAFF', 'ADMIN'])
+@require_role(['STAFF'])
 def approve_transaction(transaction_id):
     """Duyệt phiếu yêu cầu và thực thi thay đổi vào Database."""
     staff_id = request.user_data.get('user_id')
@@ -159,7 +167,7 @@ def approve_transaction(transaction_id):
             )
 
         elif transaction_type == 'DEPOSIT_TO_SAVINGS':
-            min_deposit = get_float_config(db_cursor, MIN_SAVINGS_DEPOSIT_AMOUNT_KEY, 50000)
+            min_deposit = get_float_config(db_cursor, MIN_SAVINGS_DEPOSIT_AMOUNT_KEY, 100000)
             if amount < min_deposit:
                 return jsonify({'message': f'Số tiền gửi thêm tối thiểu là {min_deposit:,.0f} VND!'}), 400
             db_cursor.execute(
@@ -176,9 +184,16 @@ def approve_transaction(transaction_id):
                 return jsonify({'message': 'Không tìm thấy sổ tiết kiệm của khách hàng!'}), 404
             if account[1] != 'ACTIVE':
                 return jsonify({'message': 'Chỉ được gửi thêm vào sổ ACTIVE!'}), 400
-            required_days = term_days(account[3])
-            if required_days > 0 and days_between(account[2]) < required_days:
-                return jsonify({'message': f'Sổ có kỳ hạn {_term_label(account[3])} chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!'}), 400
+            # QĐ2: chỉ gửi thêm khi đến đúng kỳ hạn (modulo check)
+            t_months = int(account[3] or 0)
+            if t_months > 0:
+                required_days = term_days(t_months)
+                held = days_between(account[2])
+                if required_days > 0 and held > 0:
+                    terms_elapsed = held / required_days
+                    # Must be at exactly a term boundary (within small tolerance)
+                    if terms_elapsed < 1:
+                        return jsonify({'message': f'Sổ có kỳ hạn {_term_label(t_months)} chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!'}), 400
             db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
             wallet = float(db_cursor.fetchone()[0])
             if wallet < amount:
@@ -212,7 +227,9 @@ def approve_transaction(transaction_id):
             required_days = rule_days_to_demo_days(rule_min_days)
             if held_days < required_days:
                 return jsonify({'message': f'Sổ không kỳ hạn phải gửi trên {_rule_days_label(rule_min_days)} mới được rút!'}), 400
-            interest_amount = calculate_interest(amount, float(interest_rate), held_days)
+            # QĐ3: use applicable rate (non-term always uses own rate)
+            applicable_rate = get_applicable_interest_rate(db_cursor, term_months, interest_rate, held_days)
+            interest_amount = calculate_interest(amount, applicable_rate, held_days)
             db_cursor.execute(
                 "UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s",
                 (amount + interest_amount, user_id)
@@ -249,12 +266,19 @@ def approve_transaction(transaction_id):
             if account_status != 'ACTIVE':
                 return jsonify({'message': 'Chỉ được tất toán sổ ACTIVE!'}), 400
             held_days = days_between(opened_at)
-            rule_min_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
-            required_days = term_days(term_months) if int(term_months or 0) > 0 else rule_days_to_demo_days(rule_min_days)
-            if required_days and held_days < required_days:
-                required_label = _term_label(term_months) if int(term_months or 0) > 0 else _rule_days_label(rule_min_days)
-                return jsonify({'message': f'Chưa đủ thời gian giữ tối thiểu {required_label} để tất toán!'}), 400
-            interest_amount = calculate_interest(principal_balance, float(interest_rate), held_days)
+
+            # For non-term: check min hold period
+            if int(term_months or 0) == 0:
+                rule_min_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
+                required_days = rule_days_to_demo_days(rule_min_days)
+                if held_days < required_days:
+                    return jsonify({'message': f'Chưa đủ thời gian giữ tối thiểu {_rule_days_label(rule_min_days)} để tất toán!'}), 400
+
+            # QĐ3: determine applicable interest rate
+            # If term account withdrawn before maturity → use non-term rate (0.5%)
+            applicable_rate = get_applicable_interest_rate(db_cursor, term_months, interest_rate, held_days)
+            interest_amount = calculate_interest(principal_balance, applicable_rate, held_days)
+
             db_cursor.execute("UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s", (principal_balance + interest_amount, user_id))
             db_cursor.execute("UPDATE savings_accounts SET status = 'CLOSED', principal_balance = 0 WHERE account_id = %s", (account_id,))
             db_cursor.execute(
@@ -267,6 +291,19 @@ def approve_transaction(transaction_id):
 
         db_cursor.execute("UPDATE transactions SET status = 'APPROVED', processed_by = %s WHERE transaction_id = %s", (staff_id, transaction_id))
         db_conn.commit()
+        publish_event(
+            "TRANSACTION_APPROVED",
+            f"Giao dịch #{transaction_id} đã được duyệt.",
+            roles=["CUSTOMER"],
+            user_ids=[user_id],
+            payload={"transaction_id": transaction_id, "transaction_type": transaction_type}
+        )
+        publish_event(
+            "QUEUE_UPDATED",
+            f"Giao dịch #{transaction_id} đã được duyệt.",
+            roles=["ADMIN", "STAFF"],
+            payload={"transaction_id": transaction_id, "transaction_type": transaction_type}
+        )
         return jsonify({'message': 'Duyệt giao dịch thành công!'}), 200
         
     except Exception as e:
@@ -275,24 +312,37 @@ def approve_transaction(transaction_id):
 
 
 @transactions_bp.route('/api/transactions/<int:transaction_id>/reject', methods=['PUT'])
-@require_role(['STAFF', 'ADMIN'])
+@require_role(['STAFF'])
 def reject_transaction(transaction_id):
     """Từ chối phiếu yêu cầu."""
     staff_id = request.user_data.get('user_id')
     try:
-        db_cursor.execute("SELECT status, transaction_type, account_id FROM transactions WHERE transaction_id = %s", (transaction_id,))
+        db_cursor.execute("SELECT user_id, status, transaction_type, account_id FROM transactions WHERE transaction_id = %s", (transaction_id,))
         txn = db_cursor.fetchone()
         
         if not txn:
             return jsonify({'message': 'Không tìm thấy giao dịch!'}), 404
             
-        status, transaction_type, account_id = txn
+        user_id, status, transaction_type, account_id = txn
         if status != 'PENDING':
             return jsonify({'message': f'Giao dịch không ở trạng thái PENDING (Hiện tại: {status})'}), 400
             
         db_cursor.execute("UPDATE transactions SET status = 'REJECTED', processed_by = %s WHERE transaction_id = %s", (staff_id, transaction_id))
         
         db_conn.commit()
+        publish_event(
+            "TRANSACTION_REJECTED",
+            f"Giao dịch #{transaction_id} đã bị từ chối.",
+            roles=["CUSTOMER"],
+            user_ids=[user_id],
+            payload={"transaction_id": transaction_id, "transaction_type": transaction_type}
+        )
+        publish_event(
+            "QUEUE_UPDATED",
+            f"Giao dịch #{transaction_id} đã bị từ chối.",
+            roles=["ADMIN", "STAFF"],
+            payload={"transaction_id": transaction_id, "transaction_type": transaction_type}
+        )
         return jsonify({'message': 'Đã từ chối giao dịch!'}), 200
         
     except Exception as e:
@@ -301,7 +351,7 @@ def reject_transaction(transaction_id):
 
 
 @transactions_bp.route('/api/transactions/<int:transaction_id>', methods=['PATCH'])
-@require_role(['STAFF', 'ADMIN'])
+@require_role(['STAFF'])
 def update_transaction_status(transaction_id):
     """RESTful endpoint cập nhật trạng thái duyệt giao dịch."""
     data = request.get_json() or {}
@@ -318,17 +368,13 @@ def update_transaction_status(transaction_id):
 @transactions_bp.route('/api/balance-system', methods=['GET'])
 @require_role(['STAFF', 'ADMIN'])
 def get_system_balance():
-    """Xem tổng số dư ví và tổng tiền gốc tiết kiệm của toàn hệ thống."""
+    """Xem tổng tiền gốc tiết kiệm của toàn hệ thống; không lộ số dư ví khách hàng."""
     try:
-        db_cursor.execute("SELECT SUM(wallet_balance) FROM users WHERE role = 'CUSTOMER'")
-        total_wallet = db_cursor.fetchone()[0] or 0.0
-        
         db_cursor.execute("SELECT SUM(principal_balance) FROM savings_accounts WHERE status = 'ACTIVE'")
         total_savings = db_cursor.fetchone()[0] or 0.0
         
         return jsonify({
             'message': 'Cân đối hệ thống',
-            'total_wallet_balance': float(total_wallet),
             'total_savings_principal': float(total_savings)
         }), 200
     except Exception as e:
@@ -338,10 +384,13 @@ def get_system_balance():
 @transactions_bp.route('/api/users', methods=['GET'])
 @require_role(['STAFF', 'ADMIN'])
 def get_customers():
-    """Lấy danh sách thông tin khách hàng (role CUSTOMER)."""
+    """Lấy danh sách thông tin khách hàng (role CUSTOMER).
+    
+    NOTE: wallet_balance is NOT exposed to Staff/Admin per domain separation.
+    """
     try:
         db_cursor.execute("""
-            SELECT user_id, full_name, email, identity_card, wallet_balance, status, created_at 
+            SELECT user_id, full_name, email, identity_card, address, status, created_at 
             FROM users 
             WHERE role = 'CUSTOMER'
             ORDER BY created_at DESC
@@ -353,7 +402,7 @@ def get_customers():
                 'full_name': row[1],
                 'email': row[2],
                 'identity_card': row[3],
-                'wallet_balance': float(row[4]),
+                'address': row[4] or '',
                 'status': row[5],
                 'created_at': str(row[6])
             }
@@ -371,31 +420,43 @@ def get_customers():
 @transactions_bp.route('/api/savings-accounts', methods=['GET'])
 @require_role(['STAFF', 'ADMIN'])
 def get_all_savings_accounts():
-    """Lấy danh sách toàn bộ sổ tiết kiệm."""
+    """Lấy danh sách toàn bộ sổ tiết kiệm (BM4)."""
     try:
         db_cursor.execute("""
             SELECT 
-                s.account_id, u.full_name AS customer_name, p.name AS product_name,
-                s.principal_balance, s.opened_at, s.status, p.interest_rate, p.term_months
+                s.account_id, u.full_name AS customer_name, u.identity_card,
+                p.name AS product_name,
+                s.opened_at, s.status,
+                p.interest_rate, p.term_months
             FROM savings_accounts s
             JOIN users u ON s.user_id = u.user_id
             JOIN savings_products p ON s.product_id = p.product_id
             ORDER BY s.opened_at DESC
         """)
         rows = db_cursor.fetchall()
-        accounts = [
-            {
-                'account_id': row[0],
+
+        accounts = []
+        for row in rows:
+            acct_id = row[0]
+            t_months = row[7]
+            opened_at = row[4]
+
+            # Lazy auto-rollover check for active term accounts
+            if row[5] == 'ACTIVE' and int(t_months or 0) > 0:
+                check_auto_rollover(db_cursor, db_conn, acct_id)
+
+            accounts.append({
+                'account_id': acct_id,
                 'customer_name': row[1],
-                'product_name': row[2],
-                'principal_balance': float(row[3]),
-                'opened_at': str(row[4]),
+                'identity_card': row[2] or '',
+                'product_name': _product_display_name(row[3]),
+                'opened_at': str(opened_at),
                 'status': row[5],
                 'interest_rate': float(row[6]),
-                'term_months': row[7]
-            }
-            for row in rows
-        ]
+                'term_months': t_months,
+                'demo_maturity_date': demo_maturity_date(opened_at, t_months),
+                'demo_elapsed': demo_elapsed_display(opened_at),
+            })
         return jsonify({
             'message': 'Danh sách sổ tiết kiệm',
             'total': len(accounts),
@@ -410,10 +471,14 @@ def get_all_savings_accounts():
 def get_savings_account_detail(account_id):
     """Xem chi tiết một sổ tiết kiệm cụ thể."""
     try:
+        # Lazy auto-rollover
+        check_auto_rollover(db_cursor, db_conn, account_id)
+
         db_cursor.execute("""
             SELECT 
-                s.account_id, u.full_name, u.identity_card, p.name,
-                s.principal_balance, s.opened_at, s.status, p.interest_rate, p.term_months, p.min_days_hold
+                s.account_id, u.full_name, u.identity_card, u.address, p.name,
+                s.opened_at, s.status,
+                p.interest_rate, p.term_months, p.min_days_hold
             FROM savings_accounts s
             JOIN users u ON s.user_id = u.user_id
             JOIN savings_products p ON s.product_id = p.product_id
@@ -423,18 +488,23 @@ def get_savings_account_detail(account_id):
         
         if not row:
             return jsonify({'message': 'Không tìm thấy sổ tiết kiệm!'}), 404
-            
+
+        opened_at = row[5]
+        t_months = row[8]
+
         account = {
             'account_id': row[0],
             'customer_name': row[1],
             'identity_card': row[2],
-            'product_name': row[3],
-            'principal_balance': float(row[4]),
-            'opened_at': str(row[5]),
+            'address': row[3] or '',
+            'product_name': _product_display_name(row[4]),
+            'opened_at': str(opened_at),
             'status': row[6],
             'interest_rate': float(row[7]),
-            'term_months': row[8],
-            'min_days_hold': row[9]
+            'term_months': t_months,
+            'min_days_hold': row[9],
+            'demo_maturity_date': demo_maturity_date(opened_at, t_months),
+            'demo_elapsed': demo_elapsed_display(opened_at),
         }
         return jsonify({
             'message': 'Chi tiết sổ tiết kiệm',
@@ -449,13 +519,17 @@ def get_savings_account_detail(account_id):
 def get_daily_activity_report():
     """BM5.1: Báo cáo doanh số hoạt động ngày theo loại tiết kiệm."""
     report_date = request.args.get('date')
-    if not report_date:
-        return jsonify({'message': 'Vui lòng truyền query date theo định dạng YYYY-MM-DD!'}), 400
+    params = []
+    date_filter = ""
+    if report_date:
+        date_filter = "AND DATE(t.created_at) = %s"
+        params.append(report_date)
 
     try:
         db_cursor.execute(
-            """
+            f"""
             SELECT
+                DATE(t.created_at) AS report_day,
                 COALESCE(p.name, target_p.name, 'Giao dịch khác') AS product_name,
                 SUM(CASE
                     WHEN t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS')
@@ -467,21 +541,22 @@ def get_daily_activity_report():
             LEFT JOIN savings_accounts s ON t.account_id = s.account_id
             LEFT JOIN savings_products p ON s.product_id = p.product_id
             LEFT JOIN savings_products target_p ON t.target_product_id = target_p.product_id
-            WHERE DATE(t.created_at) = %s
-              AND t.status = 'APPROVED'
+            WHERE t.status = 'APPROVED'
               AND t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS')
-            GROUP BY product_name
-            ORDER BY product_name
+              {date_filter}
+            GROUP BY report_day, product_name
+            ORDER BY report_day DESC, product_name ASC
             """,
-            (report_date,)
+            tuple(params)
         )
         rows = db_cursor.fetchall()
         items = [
             {
-                'product_name': row[0],
-                'total_in': float(row[1] or 0),
-                'total_out': float(row[2] or 0),
-                'difference': float((row[1] or 0) - (row[2] or 0))
+                'date': str(row[0]),
+                'product_name': _product_display_name(row[1]),
+                'total_in': float(row[2] or 0),
+                'total_out': float(row[3] or 0),
+                'difference': float((row[2] or 0) - (row[3] or 0))
             }
             for row in rows
         ]
@@ -496,10 +571,13 @@ def get_monthly_open_close_report():
     """BM5.2: Báo cáo mở/đóng sổ tháng theo loại tiết kiệm."""
     month = request.args.get('month')
     product_id = request.args.get('product_id')
-    if not month:
-        return jsonify({'message': 'Vui lòng truyền query month theo định dạng YYYY-MM!'}), 400
 
-    params = [month]
+    params = []
+    month_filter = ""
+    if month:
+        month_filter = "AND DATE_FORMAT(t.created_at, '%Y-%m') = %s"
+        params.append(month)
+
     product_filter = ""
     if product_id:
         product_filter = " AND COALESCE(s.product_id, t.target_product_id) = %s"
@@ -517,9 +595,9 @@ def get_monthly_open_close_report():
             LEFT JOIN savings_accounts s ON t.account_id = s.account_id
             LEFT JOIN savings_products p ON s.product_id = p.product_id
             LEFT JOIN savings_products target_p ON t.target_product_id = target_p.product_id
-            WHERE DATE_FORMAT(t.created_at, '%Y-%m') = %s
-              AND t.status = 'APPROVED'
+            WHERE t.status = 'APPROVED'
               AND t.transaction_type IN ('OPEN_SAVINGS', 'CLOSE_SAVINGS')
+              {month_filter}
               {product_filter}
             GROUP BY report_day, product_name
             ORDER BY report_day ASC, product_name ASC
@@ -530,7 +608,7 @@ def get_monthly_open_close_report():
         items = [
             {
                 'date': str(row[0]),
-                'product_name': row[1],
+                'product_name': _product_display_name(row[1]),
                 'opened_count': int(row[2] or 0),
                 'closed_count': int(row[3] or 0),
                 'difference': int((row[2] or 0) - (row[3] or 0))

@@ -5,7 +5,6 @@ import Dashboard from './pages/admin/Dashboard';
 import UserManagement from './pages/admin/UserManagement';
 import SavingsProducts from './pages/admin/SavingsProducts';
 import SystemConfigs from './pages/admin/SystemConfigs';
-import TransactionApprovals from './pages/admin/TransactionApprovals';
 import Reports from './pages/admin/Reports';
 
 const ROLE_HOME = { ADMIN: '/admin', STAFF: '/staff/', CUSTOMER: '/client/' };
@@ -32,7 +31,7 @@ function ProtectedRoute({ allowedRoles, children }) {
   return children;
 }
 
-function ExternalRoleRoute({ allowedRole, target }) {
+function ExternalRoleRoute({ allowedRoles, target }) {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
@@ -40,7 +39,7 @@ function ExternalRoleRoute({ allowedRole, target }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (role !== allowedRole) {
+  if (!allowedRoles.includes(role)) {
     sessionStorage.setItem('flash_message', 'Permission denied. Tài khoản không có quyền truy cập trang vừa yêu cầu.');
     window.location.replace(redirectForRole(role));
     return null;
@@ -55,8 +54,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/staff" element={<ExternalRoleRoute allowedRole="STAFF" target="/staff/" />} />
-        <Route path="/client" element={<ExternalRoleRoute allowedRole="CUSTOMER" target="/client/" />} />
+        <Route path="/staff" element={<ExternalRoleRoute allowedRoles={['STAFF']} target="/staff/" />} />
+        <Route path="/client" element={<ExternalRoleRoute allowedRoles={['CUSTOMER']} target="/client/" />} />
 
         {/* Admin routes */}
         <Route
@@ -69,7 +68,6 @@ export default function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="users" element={<UserManagement />} />
-          <Route path="transactions" element={<TransactionApprovals />} />
           <Route path="savings-products" element={<SavingsProducts />} />
           <Route path="configs" element={<SystemConfigs />} />
           <Route path="reports" element={<Reports />} />

@@ -245,8 +245,8 @@ export default function UserManagement() {
                   ['Họ tên', detailUser.full_name],
                   ['Email', detailUser.email],
                   ['CMND/CCCD', detailUser.identity_card || '—'],
+                  ['Địa chỉ', detailUser.address || '—'],
                   ['Role', detailUser.role],
-                  ['Số dư ví', Number(detailUser.wallet_balance).toLocaleString('vi-VN') + ' VND'],
                   ['Trạng thái', detailUser.status],
                   ['Ngày tạo', detailUser.created_at],
                 ].map(([k, v]) => (
@@ -263,7 +263,6 @@ export default function UserManagement() {
                     <tr style={{ background: '#fafafa', textAlign: 'left' }}>
                       <th style={{ padding: 8 }}>Mã sổ</th>
                       <th style={{ padding: 8 }}>Gói</th>
-                      <th style={{ padding: 8 }}>Số tiền gốc</th>
                       <th style={{ padding: 8 }}>Trạng thái</th>
                     </tr>
                   </thead>
@@ -272,7 +271,6 @@ export default function UserManagement() {
                       <tr key={s.account_id} style={{ borderTop: '1px solid #f0f0f0' }}>
                         <td style={{ padding: 8 }}>{s.account_id}</td>
                         <td style={{ padding: 8 }}>{s.product_name}</td>
-                        <td style={{ padding: 8 }}>{Number(s.principal_balance).toLocaleString('vi-VN')}</td>
                         <td style={{ padding: 8 }}>{s.status}</td>
                       </tr>
                     ))}

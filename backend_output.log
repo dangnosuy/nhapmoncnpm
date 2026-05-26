@@ -1,0 +1,41 @@
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 145-792-274
+127.0.0.1 - - [26/May/2026 14:28:02] "POST /api/auth/register HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:28:02] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:02] "GET /api/client/me HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:03] "POST /api/auth/register HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:28:03] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:03] "GET /api/client/savings-products HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:03] "POST /api/client/savings-accounts HTTP/1.1" 405 -
+127.0.0.1 - - [26/May/2026 14:28:40] "POST /api/auth/register HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:28:40] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:40] "GET /api/client/me HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:40] "POST /api/auth/register HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:28:41] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:41] "GET /api/client/savings-products HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:41] "POST /api/client/open-savings HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:28:41] "PATCH /api/transactions/1 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:41] "GET /api/client/me HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:41] "GET /api/client/savings-accounts HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:41] "GET /api/client/savings-accounts/1/estimate-interest HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:28:41] "POST /api/client/savings-accounts/1/withdraw-requests HTTP/1.1" 400 -
+127.0.0.1 - - [26/May/2026 14:29:00] "POST /api/auth/register HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:29:00] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:00] "GET /api/client/me HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "POST /api/auth/register HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:29:01] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "GET /api/client/savings-products HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "POST /api/client/open-savings HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:29:01] "PATCH /api/transactions/2 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "GET /api/client/me HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "GET /api/client/savings-accounts HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "GET /api/client/savings-accounts/2/estimate-interest HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "POST /api/client/close-savings/2 HTTP/1.1" 201 -
+127.0.0.1 - - [26/May/2026 14:29:01] "PATCH /api/transactions/3 HTTP/1.1" 200 -
+127.0.0.1 - - [26/May/2026 14:29:01] "GET /api/client/me HTTP/1.1" 200 -

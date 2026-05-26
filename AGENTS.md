@@ -30,7 +30,8 @@ mysql -u root -p < smart_savings.sql
 Run the backend from the repository root:
 
 ```bash
-PYTHONPATH=backend:backend/common:backend/staff python backend/app.py
+cd backend
+python app.py
 ```
 
 The API runs on `http://localhost:5000`; use `GET /api/ping` as a smoke test.

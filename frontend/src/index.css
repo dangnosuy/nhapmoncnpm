@@ -299,6 +299,19 @@ h2 {
   color: #fff !important;
 }
 
+.ds-realtime-pulse {
+  animation: dsBellShake .7s ease-in-out 2;
+  background: #fef3c7 !important;
+}
+
+@keyframes dsBellShake {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(6deg); }
+}
+
 .ds-toolbar {
   display: flex;
   gap: 12px;

@@ -1,11 +1,12 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from common.auth import auth_bp
+from common.events import events_bp
 from staff.staff import transactions_bp
 from admin.admin import admin_bp
 from client.client import client_bp
 from common.db import db_cursor, db_conn
-from common.savings_rules import ensure_default_configs
+from common.savings_rules import ensure_default_configs, MIN_OPEN_AMOUNT_FALLBACK
 from werkzeug.security import generate_password_hash
 import random
 import os
@@ -44,6 +45,16 @@ def ensure_account_number_schema():
     db_conn.commit()
 
 
+def ensure_address_schema():
+    """Add address column to users table if not present (BM1 requires it)."""
+    db_cursor.execute("SHOW COLUMNS FROM users LIKE 'address'")
+    if not db_cursor.fetchone():
+        db_cursor.execute(
+            "ALTER TABLE users ADD COLUMN address VARCHAR(255) NULL AFTER account_number"
+        )
+        db_conn.commit()
+
+
 def ensure_transaction_schema():
     db_cursor.execute("SHOW COLUMNS FROM transactions LIKE 'transaction_type'")
     transaction_type_column = db_cursor.fetchone()
@@ -53,7 +64,7 @@ def ensure_transaction_schema():
             ALTER TABLE transactions MODIFY transaction_type
             ENUM('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET', 'OPEN_SAVINGS',
                  'DEPOSIT_TO_SAVINGS', 'WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS',
-                 'TRANSFER_OUT', 'TRANSFER_IN') NOT NULL
+                 'TRANSFER_OUT', 'TRANSFER_IN', 'AUTO_ROLLOVER') NOT NULL
             """
         )
 
@@ -210,8 +221,8 @@ def ensure_default_savings_products():
 
     default_products = [
         ("Không kỳ hạn", 0, 0.50, 15, "Rút linh hoạt sau thời gian giữ tối thiểu."),
-        ("Tiết kiệm 3 phút", 3, 5.00, 0, "Kỳ hạn demo 3 phút để kiểm thử quy trình tất toán."),
-        ("Tiết kiệm 6 phút", 6, 5.50, 0, "Kỳ hạn demo 6 phút để kiểm thử quy trình tất toán."),
+        ("Tiết kiệm 3 tháng", 3, 5.00, 0, "Kỳ hạn 3 tháng (demo: 3 phút)."),
+        ("Tiết kiệm 6 tháng", 6, 5.50, 0, "Kỳ hạn 6 tháng (demo: 6 phút)."),
     ]
 
     db_cursor.executemany(
@@ -230,11 +241,13 @@ def ensure_system_configs():
 
 # Đăng ký các Blueprint
 app.register_blueprint(auth_bp)
+app.register_blueprint(events_bp)
 app.register_blueprint(transactions_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(client_bp)
 
 ensure_account_number_schema()
+ensure_address_schema()
 ensure_transaction_schema()
 ensure_default_admin_account()
 ensure_default_staff_account()

@@ -7,10 +7,19 @@ export default function Dashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/admin/dashboard')
-      .then((res) => setData(res.data.data))
-      .catch((err) => setError(err.response?.data?.message || 'Lỗi tải dữ liệu'))
-      .finally(() => setLoading(false));
+    const fetchDashboard = () => {
+      api.get('/admin/dashboard')
+        .then((res) => {
+          setData(res.data.data);
+          setError('');
+        })
+        .catch((err) => setError(err.response?.data?.message || 'Lỗi tải dữ liệu'))
+        .finally(() => setLoading(false));
+    };
+
+    fetchDashboard();
+    window.addEventListener('savings-realtime-event', fetchDashboard);
+    return () => window.removeEventListener('savings-realtime-event', fetchDashboard);
   }, []);
 
   if (loading) return <div className="ds-panel ds-loading">Đang tải dashboard...</div>;
