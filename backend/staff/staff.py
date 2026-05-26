@@ -568,64 +568,51 @@ def get_daily_activity_report():
 @transactions_bp.route('/api/staff/analytics', methods=['GET'])
 @require_role(['STAFF', 'ADMIN'])
 def get_analytics():
-    """Analytics: thống kê xu hướng theo khoảng thời gian.
+    """Analytics: thống kê theo tháng, hiển thị dữ liệu từng ngày trong tháng.
 
     Params:
-      - period: '7', '30', '90', '365', 'all' (days)
-      - group_by: 'day', 'month', 'year' (default: auto based on period)
+      - month: 'YYYY-MM' (e.g. '2026-05'). Defaults to current month.
     """
-    period = request.args.get('period', '30')
-    group_by = request.args.get('group_by', '')
+    import calendar
+    from datetime import datetime, date
 
-    # Determine period days
-    if period == 'all':
-        period_days = 3650  # ~10 years
-    else:
-        try:
-            period_days = int(period)
-            if period_days not in (7, 30, 90, 365, 3650):
-                period_days = 30
-        except ValueError:
-            period_days = 30
+    month_param = request.args.get('month', '')
+    if not month_param or len(month_param) != 7:
+        today = date.today()
+        month_param = f"{today.year}-{today.month:02d}"
 
-    # Auto-select group_by based on period if not specified
-    if not group_by:
-        if period_days <= 30:
-            group_by = 'day'
-        elif period_days <= 365:
-            group_by = 'month'
-        else:
-            group_by = 'year'
+    try:
+        year, mon = map(int, month_param.split('-'))
+        if not (1 <= mon <= 12 and 2020 <= year <= 2030):
+            raise ValueError
+    except Exception:
+        today = date.today()
+        year, mon = today.year, today.month
+        month_param = f"{year}-{mon:02d}"
 
-    if group_by not in ('day', 'month', 'year'):
-        group_by = 'day'
+    # Determine date range for the selected month
+    first_day = date(year, mon, 1)
+    last_day_of_month = date(year, mon, calendar.monthrange(year, mon)[1])
+    today = date.today()
+    # If selected month is current month, only go up to today
+    end_date = min(last_day_of_month, today)
 
-    # Build date format and group expression based on group_by
-    if group_by == 'month':
-        date_fmt = "DATE_FORMAT(t.created_at, '%%Y-%%m')"
-        date_fmt_users = "DATE_FORMAT(created_at, '%%Y-%%m')"
-        label_fmt = 'month'
-    elif group_by == 'year':
-        date_fmt = "DATE_FORMAT(t.created_at, '%%Y')"
-        date_fmt_users = "DATE_FORMAT(created_at, '%%Y')"
-        label_fmt = 'year'
-    else:
-        date_fmt = "DATE(t.created_at)"
-        date_fmt_users = "DATE(created_at)"
-        label_fmt = 'day'
+    # Build complete day series for the month (fill gaps with 0)
+    from datetime import timedelta
+    all_days = []
+    d = first_day
+    while d <= end_date:
+        all_days.append(d.isoformat())
+        d += timedelta(days=1)
 
-    # Period filter
-    if period == 'all':
-        period_filter = ""
-        period_params = ()
-    else:
-        period_filter = "AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)"
-        period_params = (period_days,)
-
+    date_fmt = "DATE(t.created_at)"
+    date_fmt_users = "DATE(created_at)"
+    period_filter = "AND t.created_at >= %s AND t.created_at < %s + INTERVAL 1 DAY"
+    period_params = (first_day.isoformat(), end_date.isoformat())
     period_filter_users = period_filter.replace('t.created_at', 'created_at')
 
     try:
-        # 1. New savings accounts opened
+        # 1. New savings accounts opened per day
         db_cursor.execute(
             f"""
             SELECT {date_fmt} AS label, COUNT(*) AS count
@@ -636,9 +623,9 @@ def get_analytics():
             GROUP BY label ORDER BY label ASC
             """, period_params
         )
-        new_accounts = [{'day': str(r[0]), 'count': int(r[1])} for r in db_cursor.fetchall()]
+        new_accounts_map = {str(r[0]): int(r[1]) for r in db_cursor.fetchall()}
 
-        # 2. Total deposits
+        # 2. Total deposits per day
         db_cursor.execute(
             f"""
             SELECT {date_fmt} AS label, SUM(t.amount) AS total
@@ -649,9 +636,9 @@ def get_analytics():
             GROUP BY label ORDER BY label ASC
             """, period_params
         )
-        deposits = [{'day': str(r[0]), 'total': float(r[1] or 0)} for r in db_cursor.fetchall()]
+        deposits_map = {str(r[0]): float(r[1] or 0) for r in db_cursor.fetchall()}
 
-        # 3. Total withdrawals
+        # 3. Total withdrawals per day
         db_cursor.execute(
             f"""
             SELECT {date_fmt} AS label,
@@ -663,9 +650,9 @@ def get_analytics():
             GROUP BY label ORDER BY label ASC
             """, period_params
         )
-        withdrawals = [{'day': str(r[0]), 'total': float(r[1] or 0)} for r in db_cursor.fetchall()]
+        withdrawals_map = {str(r[0]): float(r[1] or 0) for r in db_cursor.fetchall()}
 
-        # 4. Customer growth
+        # 4. Customer growth per day
         db_cursor.execute(
             f"""
             SELECT {date_fmt_users} AS label, COUNT(*) AS count
@@ -675,7 +662,13 @@ def get_analytics():
             GROUP BY label ORDER BY label ASC
             """, period_params
         )
-        customer_growth = [{'day': str(r[0]), 'count': int(r[1])} for r in db_cursor.fetchall()]
+        customer_growth_map = {str(r[0]): int(r[1]) for r in db_cursor.fetchall()}
+
+        # Fill gaps — every day in the month gets an entry (0 if no data)
+        new_accounts = [{'day': day, 'count': new_accounts_map.get(day, 0)} for day in all_days]
+        deposits = [{'day': day, 'total': deposits_map.get(day, 0)} for day in all_days]
+        withdrawals = [{'day': day, 'total': withdrawals_map.get(day, 0)} for day in all_days]
+        customer_growth = [{'day': day, 'count': customer_growth_map.get(day, 0)} for day in all_days]
 
         # 5. Active vs closed accounts cumulative
         db_cursor.execute(
@@ -692,29 +685,19 @@ def get_analytics():
             'closed': int(acct_row[1] or 0)
         }
 
-        # 6. Summary totals for the period
-        db_cursor.execute(
-            f"""
-            SELECT
-                SUM(CASE WHEN t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS') THEN t.amount ELSE 0 END) AS total_deposits,
-                SUM(CASE WHEN t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') THEN t.amount + COALESCE(t.interest_amount, 0) ELSE 0 END) AS total_withdrawals,
-                SUM(CASE WHEN t.transaction_type = 'OPEN_SAVINGS' THEN 1 ELSE 0 END) AS new_accounts
-            FROM transactions t
-            WHERE t.status = 'APPROVED'
-              {period_filter}
-            """, period_params
-        )
-        summary_row = db_cursor.fetchone()
+        # 6. Summary totals for the selected month
+        total_deposits = sum(deposits_map.values())
+        total_withdrawals = sum(withdrawals_map.values())
+        total_new_accounts = sum(new_accounts_map.values())
         summary = {
-            'total_deposits': float(summary_row[0] or 0),
-            'total_withdrawals': float(summary_row[1] or 0),
-            'net_flow': float((summary_row[0] or 0) - (summary_row[1] or 0)),
-            'new_accounts': int(summary_row[2] or 0)
+            'total_deposits': total_deposits,
+            'total_withdrawals': total_withdrawals,
+            'net_flow': total_deposits - total_withdrawals,
+            'new_accounts': total_new_accounts
         }
 
         return jsonify({
-            'period': period,
-            'group_by': group_by,
+            'month': month_param,
             'summary': summary,
             'account_status': account_status,
             'new_accounts': new_accounts,
