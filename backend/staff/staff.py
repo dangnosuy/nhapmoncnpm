@@ -565,6 +565,120 @@ def get_daily_activity_report():
         return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
 
 
+@transactions_bp.route('/api/staff/analytics', methods=['GET'])
+@require_role(['STAFF', 'ADMIN'])
+def get_analytics():
+    """Analytics: thống kê xu hướng theo khoảng thời gian (7d/30d/90d/365d)."""
+    period = request.args.get('period', '30')  # days
+    try:
+        period_days = int(period)
+        if period_days not in (7, 30, 90, 365):
+            period_days = 30
+    except ValueError:
+        period_days = 30
+
+    try:
+        # 1. New savings accounts opened per day
+        db_cursor.execute(
+            """
+            SELECT DATE(t.created_at) AS day, COUNT(*) AS count
+            FROM transactions t
+            WHERE t.status = 'APPROVED'
+              AND t.transaction_type = 'OPEN_SAVINGS'
+              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+            GROUP BY day ORDER BY day ASC
+            """, (period_days,)
+        )
+        new_accounts = [{'day': str(r[0]), 'count': int(r[1])} for r in db_cursor.fetchall()]
+
+        # 2. Total deposits per day (OPEN_SAVINGS + DEPOSIT_TO_SAVINGS)
+        db_cursor.execute(
+            """
+            SELECT DATE(t.created_at) AS day, SUM(t.amount) AS total
+            FROM transactions t
+            WHERE t.status = 'APPROVED'
+              AND t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS')
+              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+            GROUP BY day ORDER BY day ASC
+            """, (period_days,)
+        )
+        deposits = [{'day': str(r[0]), 'total': float(r[1] or 0)} for r in db_cursor.fetchall()]
+
+        # 3. Total withdrawals per day (WITHDRAW_FROM_SAVINGS + CLOSE_SAVINGS)
+        db_cursor.execute(
+            """
+            SELECT DATE(t.created_at) AS day,
+                   SUM(t.amount + COALESCE(t.interest_amount, 0)) AS total
+            FROM transactions t
+            WHERE t.status = 'APPROVED'
+              AND t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS')
+              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+            GROUP BY day ORDER BY day ASC
+            """, (period_days,)
+        )
+        withdrawals = [{'day': str(r[0]), 'total': float(r[1] or 0)} for r in db_cursor.fetchall()]
+
+        # 4. Customer growth — new customers per day
+        db_cursor.execute(
+            """
+            SELECT DATE(created_at) AS day, COUNT(*) AS count
+            FROM users
+            WHERE role = 'CUSTOMER'
+              AND created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+            GROUP BY day ORDER BY day ASC
+            """, (period_days,)
+        )
+        customer_growth = [{'day': str(r[0]), 'count': int(r[1])} for r in db_cursor.fetchall()]
+
+        # 5. Active vs closed accounts cumulative
+        db_cursor.execute(
+            """
+            SELECT
+                SUM(CASE WHEN status = 'ACTIVE' THEN 1 ELSE 0 END) AS active,
+                SUM(CASE WHEN status = 'CLOSED' THEN 1 ELSE 0 END) AS closed
+            FROM savings_accounts
+            """
+        )
+        acct_row = db_cursor.fetchone()
+        account_status = {
+            'active': int(acct_row[0] or 0),
+            'closed': int(acct_row[1] or 0)
+        }
+
+        # 6. Summary totals for the period
+        db_cursor.execute(
+            """
+            SELECT
+                SUM(CASE WHEN t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS') THEN t.amount ELSE 0 END) AS total_deposits,
+                SUM(CASE WHEN t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') THEN t.amount + COALESCE(t.interest_amount, 0) ELSE 0 END) AS total_withdrawals,
+                SUM(CASE WHEN t.transaction_type = 'OPEN_SAVINGS' THEN 1 ELSE 0 END) AS new_accounts
+            FROM transactions t
+            WHERE t.status = 'APPROVED'
+              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
+            """, (period_days,)
+        )
+        summary_row = db_cursor.fetchone()
+        summary = {
+            'total_deposits': float(summary_row[0] or 0),
+            'total_withdrawals': float(summary_row[1] or 0),
+            'net_flow': float((summary_row[0] or 0) - (summary_row[1] or 0)),
+            'new_accounts': int(summary_row[2] or 0)
+        }
+
+        return jsonify({
+            'period_days': period_days,
+            'summary': summary,
+            'account_status': account_status,
+            'new_accounts': new_accounts,
+            'deposits': deposits,
+            'withdrawals': withdrawals,
+            'customer_growth': customer_growth
+        }), 200
+
+    except Exception as e:
+        return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
+
+
 @transactions_bp.route('/api/reports/monthly-open-close', methods=['GET'])
 @require_role(['STAFF', 'ADMIN'])
 def get_monthly_open_close_report():

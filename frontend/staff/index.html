@@ -193,6 +193,7 @@
         <button data-page="customers">Khách hàng</button>
         <button data-page="accounts">Sổ tiết kiệm</button>
         <button data-page="reports">Báo cáo BM5</button>
+        <button data-page="analytics">Thống kê xu hướng</button>
       </div>
       <button id="logoutBtn" class="logout">Đăng xuất</button>
     </aside>
@@ -305,6 +306,47 @@
           </div>
         </div>
       </section>
+
+      <section id="page-analytics" class="page hidden">
+        <div class="toolbar">
+          <div class="field">
+            <label>Khoảng thời gian</label>
+            <select id="analyticsPeriod">
+              <option value="7">7 ngày</option>
+              <option value="30" selected>30 ngày</option>
+              <option value="90">90 ngày</option>
+              <option value="365">1 năm</option>
+            </select>
+          </div>
+          <button id="loadAnalyticsBtn" class="primary">Tải dữ liệu</button>
+        </div>
+        <div class="cards" id="analyticsCards">
+          <div class="card"><span>Tổng tiền gửi</span><strong id="anTotalDeposits">0 ₫</strong></div>
+          <div class="card"><span>Tổng tiền rút</span><strong id="anTotalWithdrawals">0 ₫</strong></div>
+          <div class="card"><span>Chênh lệch ròng</span><strong id="anNetFlow">0 ₫</strong></div>
+          <div class="card"><span>Sổ mới mở</span><strong id="anNewAccounts">0</strong></div>
+        </div>
+        <div class="cards" id="analyticsStatusCards">
+          <div class="card"><span>Sổ đang hoạt động</span><strong id="anActiveAccounts">0</strong></div>
+          <div class="card"><span>Sổ đã đóng</span><strong id="anClosedAccounts">0</strong></div>
+        </div>
+        <div class="split" style="margin-top:16px;">
+          <div class="panel" style="padding:16px;">
+            <div id="analyticsDepositsChart"></div>
+          </div>
+          <div class="panel" style="padding:16px;">
+            <div id="analyticsWithdrawalsChart"></div>
+          </div>
+        </div>
+        <div class="split" style="margin-top:16px;">
+          <div class="panel" style="padding:16px;">
+            <div id="analyticsNewAccountsChart"></div>
+          </div>
+          <div class="panel" style="padding:16px;">
+            <div id="analyticsCustomerGrowthChart"></div>
+          </div>
+        </div>
+      </section>
     </main>
   </section>
 
@@ -402,7 +444,8 @@
       transactions: ["Duyệt giao dịch", "Xử lý hàng đợi maker-checker của khách hàng."],
       customers: ["Khách hàng", "Tra cứu thông tin khách hàng đang sử dụng hệ thống."],
       accounts: ["Sổ tiết kiệm", "Tra cứu toàn bộ sổ tiết kiệm theo mẫu BM4."],
-      reports: ["Báo cáo BM5", "Lập báo cáo doanh số ngày và mở/đóng sổ tháng."]
+      reports: ["Báo cáo BM5", "Lập báo cáo doanh số ngày và mở/đóng sổ tháng."],
+      analytics: ["Thống kê xu hướng", "Biểu đồ xu hướng tiền gửi/rút, sổ mới và tăng trưởng khách hàng."]
     };
 
     const el = {
@@ -714,6 +757,101 @@
 
     el.dailyDate.value = "";
     el.monthInput.value = "";
+
+    // ─── ANALYTICS DASHBOARD ───
+    let analyticsData = null;
+
+    function renderAnalyticsChart(containerId, data, title, color, unit, key) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      if (!data || data.length === 0) {
+        container.innerHTML = `<div style="font-size:14px;font-weight:900;margin-bottom:8px;">${title}</div><div class="muted" style="padding:24px;text-align:center;">Không có dữ liệu.</div>`;
+        return;
+      }
+
+      const svgWidth = Math.max(container.clientWidth - 32, 400);
+      const svgHeight = 240;
+      const padL = 100, padR = 20, padT = 24, padB = 44;
+      const cW = svgWidth - padL - padR;
+      const cH = svgHeight - padT - padB;
+
+      const values = data.map(d => d[key] || 0);
+      const maxVal = Math.max(...values, 1);
+
+      const barW = Math.max(Math.floor(cW / data.length) - 4, 4);
+      const gap = Math.max(Math.floor((cW - barW * data.length) / (data.length + 1)), 2);
+
+      const bars = data.map((d, i) => {
+        const val = d[key] || 0;
+        const h = (val / maxVal) * cH;
+        const x = padL + gap + i * (barW + gap);
+        const y = padT + cH - h;
+        const label = d.day ? d.day.slice(5) : ""; // MM-DD
+        const fmtVal = unit === "₫" ? money(val) : val.toLocaleString("vi-VN");
+        return `
+          <rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="${color}" rx="2"/>
+          <text x="${x + barW/2}" y="${y - 4}" text-anchor="middle" font-size="10" font-weight="700" font-family="JetBrains Mono,monospace" fill="${color}">${fmtVal}</text>
+          <text x="${x + barW/2}" y="${padT + cH + 14}" text-anchor="middle" font-size="10" font-family="JetBrains Mono,monospace" fill="#526070">${label}</text>
+        `;
+      }).join("");
+
+      // Y-axis ticks (4)
+      const yTicks = [0, 0.33, 0.66, 1.0].map(f => {
+        const val = maxVal * f;
+        const y = padT + cH - f * cH;
+        const fmt = unit === "₫" ? money(val) : Math.round(val).toLocaleString("vi-VN");
+        return `
+          <line x1="${padL}" y1="${y}" x2="${padL + cW}" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>
+          <text x="${padL - 6}" y="${y + 4}" text-anchor="end" font-size="10" font-family="JetBrains Mono,monospace" font-weight="700" fill="#526070">${fmt}</text>
+        `;
+      }).join("");
+
+      container.innerHTML = `
+        <div style="font-size:14px;font-weight:900;margin-bottom:8px;">${title}</div>
+        <div style="overflow-x:auto;">
+          <svg width="${svgWidth}" height="${svgHeight}" style="display:block;">
+            ${yTicks}
+            ${bars}
+            <line x1="${padL}" y1="${padT + cH}" x2="${padL + cW}" y2="${padT + cH}" stroke="#111827" stroke-width="2"/>
+            <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT + cH}" stroke="#111827" stroke-width="2"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    async function loadAnalytics() {
+      const period = document.getElementById("analyticsPeriod")?.value || "30";
+      try {
+        const res = await api(`/api/staff/analytics?period=${period}`);
+        analyticsData = res;
+
+        // Summary cards
+        document.getElementById("anTotalDeposits").textContent = money(res.summary?.total_deposits || 0);
+        document.getElementById("anTotalWithdrawals").textContent = money(res.summary?.total_withdrawals || 0);
+        const net = res.summary?.net_flow || 0;
+        const netEl = document.getElementById("anNetFlow");
+        netEl.textContent = (net >= 0 ? "+" : "") + money(net);
+        netEl.style.color = net >= 0 ? "#16a34a" : "#dc2626";
+        document.getElementById("anNewAccounts").textContent = (res.summary?.new_accounts || 0).toLocaleString("vi-VN");
+
+        // Status cards
+        document.getElementById("anActiveAccounts").textContent = (res.account_status?.active || 0).toLocaleString("vi-VN");
+        document.getElementById("anClosedAccounts").textContent = (res.account_status?.closed || 0).toLocaleString("vi-VN");
+
+        // Charts
+        renderAnalyticsChart("analyticsDepositsChart", res.deposits, "💰 Tổng tiền gửi theo ngày", "#2563eb", "₫", "total");
+        renderAnalyticsChart("analyticsWithdrawalsChart", res.withdrawals, "💸 Tổng tiền rút theo ngày", "#dc2626", "₫", "total");
+        renderAnalyticsChart("analyticsNewAccountsChart", res.new_accounts, "📖 Sổ mới mở theo ngày", "#16a34a", "", "count");
+        renderAnalyticsChart("analyticsCustomerGrowthChart", res.customer_growth, "👥 Khách hàng mới theo ngày", "#d97706", "", "count");
+
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+
+    document.getElementById("loadAnalyticsBtn").addEventListener("click", loadAnalytics);
+    document.getElementById("analyticsPeriod").addEventListener("change", loadAnalytics);
+
     // Auto-run if token valid (single login flow)
     if (state.token && state.role === "STAFF") {
       const flash = sessionStorage.getItem("flash_message");
