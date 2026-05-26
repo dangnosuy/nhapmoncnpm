@@ -897,7 +897,7 @@
 
     .bottom-nav-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 8px;
     }
 
@@ -1815,6 +1815,7 @@
                 <button class="nav-btn" data-page="savings">Tiết kiệm của tôi</button>
                 <button class="nav-btn" data-page="transactions">Lịch sử giao dịch</button>
                 <button class="nav-btn" data-page="profile">Thông tin cá nhân</button>
+                <button class="nav-btn" data-page="chart">Biểu đồ tăng trưởng</button>
               </div>
 
               <button id="logoutBtn" class="logout-btn" type="button">Đăng xuất</button>
@@ -2011,6 +2012,19 @@
               <div class="profile-grid" id="profileGrid"></div>
             </section>
           </div>
+
+          <div id="page-chart" class="page-panel hidden">
+            <section class="section-card">
+              <div class="section-head">
+                <div>
+                  <h2>Biểu đồ tăng trưởng</h2>
+                  <p>Theo dõi hiệu suất sinh lời của các sổ tiết kiệm</p>
+                </div>
+                <button class="outline-btn refresh-btn">Làm mới</button>
+              </div>
+              <div id="chartContainer"></div>
+            </section>
+          </div>
         </main>
       </div>
 
@@ -2031,6 +2045,10 @@
           <button class="bottom-btn" data-page="transactions">
             <div class="bottom-btn-icon"><i class="fa-solid fa-wallet"></i></div>
             <small>LSGD</small>
+          </button>
+          <button class="bottom-btn" data-page="chart">
+            <div class="bottom-btn-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <small>Biểu đồ</small>
           </button>
           <button class="bottom-btn" data-page="profile">
             <div class="bottom-btn-icon"><i class="fa-solid fa-user"></i></div>
@@ -2229,6 +2247,137 @@
       `;
     }
 
+    function renderChartPage() {
+      const container = document.getElementById("chartContainer");
+      if (!container) return;
+      const accounts = appState.accounts || [];
+
+      if (!accounts.length) {
+        container.innerHTML = `<div class="empty-box">Bạn chưa có sổ tiết kiệm nào để hiển thị biểu đồ.</div>`;
+        return;
+      }
+
+      container.innerHTML = accounts.map((item) => {
+        const principal = Number(item.principal_balance || 0);
+        const annualRate = Number(item.interest_rate || 0);
+        const term = Number(item.term_months || 0);
+        const duration = term > 0 ? term : 12;
+        const held = Math.min(demoMinutesHeld(item.opened_at), duration);
+        const current = projectedValue(principal, annualRate, held);
+        const maturity = projectedValue(principal, annualRate, duration);
+        const profit = current - principal;
+        const profitPercent = principal > 0 ? ((profit / principal) * 100).toFixed(2) : 0;
+        const progressPercent = duration > 0 ? ((held / duration) * 100).toFixed(1) : 0;
+
+        // Generate smooth curve points for large chart
+        const svgPoints = [];
+        const svgWidth = 800;
+        const svgHeight = 220;
+        const padLeft = 60;
+        const padRight = 30;
+        const padTop = 20;
+        const padBottom = 40;
+        const chartW = svgWidth - padLeft - padRight;
+        const chartH = svgHeight - padTop - padBottom;
+
+        const steps = 24;
+        for (let i = 0; i <= steps; i++) {
+          const minute = (i / steps) * duration;
+          const value = projectedValue(principal, annualRate, minute);
+          const x = padLeft + (i / steps) * chartW;
+          const y = padTop + chartH - ((value - principal) / Math.max(maturity - principal, 1)) * chartH;
+          svgPoints.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+        }
+
+        const progressX = padLeft + (held / duration) * chartW;
+
+        // Y-axis labels
+        const yLabels = [0, 0.25, 0.5, 0.75, 1.0].map((frac) => {
+          const val = principal + (maturity - principal) * frac;
+          const y = padTop + chartH - frac * chartH;
+          return `<text x="${padLeft - 8}" y="${y + 4}" text-anchor="end" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" fill="#526070">${money(val)}</text>`;
+        }).join("");
+
+        // X-axis labels
+        const xLabels = [0, 0.25, 0.5, 0.75, 1.0].map((frac) => {
+          const monthVal = frac * duration;
+          const x = padLeft + frac * chartW;
+          const label = monthVal === 0 ? "Mở sổ" : `${monthVal} tháng`;
+          return `<text x="${x}" y="${svgHeight - 8}" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" fill="#526070">${label}</text>`;
+        }).join("");
+
+        // Grid lines
+        const gridLines = [0.25, 0.5, 0.75].map((frac) => {
+          const y = padTop + chartH - frac * chartH;
+          return `<line x1="${padLeft}" y1="${y}" x2="${svgWidth - padRight}" y2="${y}" stroke="#e5e7eb" stroke-width="1" stroke-dasharray="4 4" />`;
+        }).join("");
+
+        // Area fill under curve
+        const areaPoints = svgPoints.join(" ") + ` ${padLeft + chartW},${padTop + chartH} ${padLeft},${padTop + chartH}`;
+
+        return `
+          <div style="border:3px solid #111827;background:#fff;margin-bottom:20px;padding:24px;box-shadow:7px 7px 0 #111827;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+              <div>
+                <div style="font-size:28px;font-weight:900;line-height:1;">${escapeHtml(productDisplayName(item.product_name))}</div>
+                <div style="color:#526070;font-size:14px;margin-top:4px;">Mã sổ #${escapeHtml(item.account_id)} · ${escapeHtml(item.status)} · Mở ngày ${escapeHtml(item.opened_at)}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:14px;color:#526070;font-weight:800;">Giá trị hiện tại</div>
+                <div style="font-size:30px;font-weight:900;color:#dd614c;">${money(current)}</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(4, minmax(0,1fr));gap:12px;margin-bottom:20px;">
+              <div style="border:2px solid #111827;padding:14px;background:#fff7ed;">
+                <div style="font-size:12px;font-weight:900;color:#526070;text-transform:uppercase;">Vốn gốc</div>
+                <div style="font-size:22px;font-weight:900;margin-top:4px;font-family:JetBrains Mono,monospace;">${money(principal)}</div>
+              </div>
+              <div style="border:2px solid #111827;padding:14px;background:#dcfce7;">
+                <div style="font-size:12px;font-weight:900;color:#526070;text-transform:uppercase;">Lãi dự tính</div>
+                <div style="font-size:22px;font-weight:900;margin-top:4px;color:#16a34a;font-family:JetBrains Mono,monospace;">+${money(profit)}</div>
+              </div>
+              <div style="border:2px solid #111827;padding:14px;background:#dbeafe;">
+                <div style="font-size:12px;font-weight:900;color:#526070;text-transform:uppercase;">Tỷ lệ sinh lời</div>
+                <div style="font-size:22px;font-weight:900;margin-top:4px;color:#2563eb;font-family:JetBrains Mono,monospace;">${profitPercent}%</div>
+              </div>
+              <div style="border:2px solid #111827;padding:14px;background:#fef3c7;">
+                <div style="font-size:12px;font-weight:900;color:#526070;text-transform:uppercase;">Tiến độ</div>
+                <div style="font-size:22px;font-weight:900;margin-top:4px;color:#d97706;font-family:JetBrains Mono,monospace;">${progressPercent}%</div>
+              </div>
+            </div>
+
+            <div style="border:2px solid #111827;padding:16px;background:#fff;">
+              <svg viewBox="0 0 ${svgWidth} ${svgHeight}" style="width:100%;height:auto;display:block;" role="img" aria-label="Biểu đồ tăng trưởng chi tiết">
+                <defs>
+                  <linearGradient id="grad_${item.account_id}" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#dd614c" stop-opacity="0.3" />
+                    <stop offset="100%" stop-color="#dd614c" stop-opacity="0.02" />
+                  </linearGradient>
+                </defs>
+                ${gridLines}
+                ${yLabels}
+                ${xLabels}
+                <polygon points="${areaPoints}" fill="url(#grad_${item.account_id})" />
+                <polyline points="${svgPoints.join(" ")}" fill="none" stroke="#dd614c" stroke-width="3.5" stroke-linecap="square" stroke-linejoin="round" />
+                <line x1="${progressX}" y1="${padTop}" x2="${progressX}" y2="${padTop + chartH}" stroke="#2563eb" stroke-width="2" stroke-dasharray="6 4" />
+                <circle cx="${progressX}" cy="${padTop + chartH}" r="6" fill="#2563eb" stroke="#111827" stroke-width="2" />
+                <text x="${progressX}" y="${padTop - 6}" text-anchor="middle" font-size="12" font-weight="900" fill="#2563eb" font-family="Darker Grotesque, sans-serif;">Hiện tại</text>
+                <line x1="${padLeft}" y1="${padTop + chartH}" x2="${svgWidth - padRight}" y2="${padTop + chartH}" stroke="#111827" stroke-width="2.5" />
+                <line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${padTop + chartH}" stroke="#111827" stroke-width="2.5" />
+              </svg>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px;font-weight:800;color:#526070;font-family:JetBrains Mono,monospace;">
+              <span>Vốn gốc: ${money(principal)}</span>
+              <span>Lãi suất: ${annualRate}%/năm</span>
+              <span>${term > 0 ? `Đáo hạn ${termLabel(term)}` : "Mốc 12 tháng"}: ${money(maturity)}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
     function closeActionModal(result) {
       el.actionModal.classList.add("hidden");
       el.actionModal.setAttribute("aria-hidden", "true");
@@ -2332,6 +2481,11 @@
         hasJson = true;
       } catch (error) {
         data = {};
+      }
+
+      if (response.status === 401) {
+        handleLogout();
+        throw new Error("Token expired.");
       }
 
       if (!response.ok) {
@@ -2601,6 +2755,7 @@
       renderTransactions(el.homeTransactionsList, appState.transactions.slice(0, 4));
       renderTransactions(el.transactionsList, appState.transactions);
       renderProfile();
+      renderChartPage();
       el.transactionsCountText.textContent = `${appState.transactions.length} giao dịch`;
       switchPage(appState.currentPage, false);
     }
@@ -2897,14 +3052,24 @@
       });
     }
 
+    /** Decode JWT payload and check expiration */
+    function isTokenExpired(token) {
+      if (!token) return true;
+      try {
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        var payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (!payload.exp) return false;
+        return Date.now() >= payload.exp * 1000;
+      } catch (e) {
+        return true;
+      }
+    }
+
     async function init() {
-      // Single login: if no token redirect to central login
-      if (!appState.token) {
-        const flash = sessionStorage.getItem("flash_message");
-        if (flash) {
-          sessionStorage.setItem("flash_message", flash);
-        }
-        window.location.replace("/login");
+      // Single login: if no token or token expired, redirect to central login
+      if (isTokenExpired(appState.token)) {
+        handleLogout();
         return;
       }
       if (appState.role !== "CUSTOMER") {

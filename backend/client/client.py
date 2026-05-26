@@ -17,7 +17,7 @@ from common.savings_rules import (
     get_float_config,
     get_int_config,
     is_matured,
-    rule_days_to_demo_days,
+    rule_days_to_real_days,
     term_days,
 )
 
@@ -826,7 +826,7 @@ def create_savings_withdraw_request(account_id):
 
         held_days = days_between(opened_at)
         rule_min_days = int(min_days_hold or get_int_config(cursor, NON_TERM_MIN_DAYS_KEY, 15))
-        required_days = rule_days_to_demo_days(rule_min_days)
+        required_days = rule_days_to_real_days(rule_min_days)
         if held_days < required_days:
             return jsonify({
                 "message": f"Sổ không kỳ hạn phải gửi trên {_rule_days_label(rule_min_days)} mới được rút!",
@@ -911,7 +911,7 @@ def create_close_savings_request(account_id):
         # For non-term: check minimum hold period
         if t_months == 0:
             rule_min_days = int(min_days_hold or get_int_config(cursor, NON_TERM_MIN_DAYS_KEY, 15))
-            required_days = rule_days_to_demo_days(rule_min_days)
+            required_days = rule_days_to_real_days(rule_min_days)
             if held_days < required_days:
                 return jsonify({
                     "message": f"Chưa đủ thời gian giữ tối thiểu {_rule_days_label(rule_min_days)} để tất toán!",

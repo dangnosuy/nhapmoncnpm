@@ -13,11 +13,34 @@ function redirectForRole(role) {
   return ROLE_HOME[role] || '/login';
 }
 
+/** Decode JWT payload (base64url) and check if token is expired */
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload.exp) return false; // no exp claim → treat as valid
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true; // malformed token → expired
+  }
+}
+
+/** Clear stale auth data and redirect to login */
+function clearAuthAndRedirect() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  localStorage.removeItem('username');
+  window.location.replace('/login');
+}
+
 function ProtectedRoute({ allowedRoles, children }) {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  if (!token || isTokenExpired(token)) {
+    clearAuthAndRedirect();
+    return null;
   }
   if (!allowedRoles.includes(role)) {
     sessionStorage.setItem('flash_message', 'Permission denied. Tài khoản không có quyền truy cập trang vừa yêu cầu.');
@@ -35,8 +58,9 @@ function ExternalRoleRoute({ allowedRoles, target }) {
   const token = localStorage.getItem('token');
   const role = localStorage.getItem('role');
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  if (!token || isTokenExpired(token)) {
+    clearAuthAndRedirect();
+    return null;
   }
 
   if (!allowedRoles.includes(role)) {

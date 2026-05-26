@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 
 DEMO_MINUTES_PER_YEAR = 12
 MINUTES_PER_DAY = 24 * 60
+DAYS_PER_YEAR = 365
 MIN_OPEN_AMOUNT_KEY = "MIN_OPEN_AMOUNT"
 MIN_SAVINGS_DEPOSIT_AMOUNT_KEY = "MIN_SAVINGS_DEPOSIT_AMOUNT"
 NON_TERM_MIN_DAYS_KEY = "NON_TERM_MIN_DAYS"
@@ -47,34 +48,29 @@ def days_between(started_at, ended_at=None):
 
 
 def term_days(term_months):
-    """Convert term_months (business months) to real days for demo.
+    """Convert term_months (business months) to real days.
 
-    Demo mode: 1 saved "month" maps to 1 real minute.
-    So term_months minutes / 1440 minutes_per_day = real days.
+    Real mode: 1 month = 30 days.
     """
-    return int(term_months or 0) / 1440
+    return int(term_months or 0) * 30
 
 
-def rule_days_to_demo_days(rule_days):
-    """Convert business rule days to real demo days.
-
-    Demo scale: 30 rule days = 1 real minute.
-    """
-    return max(float(rule_days or 0), 0) / 30 / MINUTES_PER_DAY
+def rule_days_to_real_days(rule_days):
+    """In real mode, rule days are actual calendar days."""
+    return max(float(rule_days or 0), 0)
 
 
-def demo_years_from_real_days(days_held):
-    """Convert real elapsed days to demo years for interest calculation."""
-    real_minutes = max(float(days_held or 0), 0) * MINUTES_PER_DAY
-    return real_minutes / DEMO_MINUTES_PER_YEAR
+def years_from_days(days_held):
+    """Convert days to years for interest calculation (365 days = 1 year)."""
+    return max(float(days_held or 0), 0) / DAYS_PER_YEAR
 
 
 def calculate_interest(principal, annual_rate, days_held):
-    """Calculate interest based on demo time scaling."""
+    """Calculate interest based on real calendar days."""
     principal = float(principal or 0)
     annual_rate = float(annual_rate or 0)
-    demo_years = demo_years_from_real_days(days_held)
-    return round(principal * annual_rate / 100 * demo_years, 2)
+    years = years_from_days(days_held)
+    return round(principal * annual_rate / 100 * years, 2)
 
 
 def get_non_term_rate(cursor):
@@ -123,22 +119,19 @@ def demo_maturity_date(opened_at, term_months):
 
 
 def demo_elapsed_display(opened_at):
-    """Convert real elapsed time to a display string in business time.
+    """Convert real elapsed time to a display string in months/days.
 
-    1 real minute = 1 business month.
     Returns a string like "2 tháng 15 ngày".
     """
     if isinstance(opened_at, str):
         opened_at = datetime.fromisoformat(opened_at)
-    elapsed_seconds = max((datetime.now() - opened_at).total_seconds(), 0)
-    # 1 minute = 1 month, so 1 second = 1/60 month = 30/60 days = 0.5 days
-    total_demo_days = elapsed_seconds * 30 / 60  # seconds * (30 days/month) / (60 seconds/minute)
-    demo_months = int(total_demo_days // 30)
-    remaining_days = int(total_demo_days % 30)
+    held_days = days_between(opened_at)
+    real_months = int(held_days // 30)
+    remaining_days = int(held_days % 30)
 
     parts = []
-    if demo_months > 0:
-        parts.append(f"{demo_months} tháng")
+    if real_months > 0:
+        parts.append(f"{real_months} tháng")
     if remaining_days > 0 or not parts:
         parts.append(f"{remaining_days} ngày")
     return " ".join(parts)
@@ -195,8 +188,8 @@ def check_auto_rollover(cursor, conn, account_id):
         # One term has passed: compute interest for exactly one term
         interest = calculate_interest(current_principal, float(rate), mat)
         current_principal += interest
-        # Advance opened_at by one term (in real time: term_months minutes)
-        current_opened = current_opened + relativedelta(minutes=t_months)
+        # Advance opened_at by one term (in real time: term_months months)
+        current_opened = current_opened + relativedelta(months=t_months)
         rollover_count += 1
         # Safety: prevent infinite loop
         if rollover_count > 100:

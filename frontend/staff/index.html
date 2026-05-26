@@ -337,8 +337,34 @@
       setTimeout(() => toast.remove(), 3200);
     }
 
-    // Single Login: redirect to /login if no valid token
-    if (!sharedToken || sharedRole !== "STAFF") {
+    /** Decode JWT payload and check expiration */
+    function isTokenExpired(token) {
+      if (!token) return true;
+      try {
+        var parts = token.split('.');
+        if (parts.length !== 3) return true;
+        var payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (!payload.exp) return false;
+        return Date.now() >= payload.exp * 1000;
+      } catch (e) {
+        return true;
+      }
+    }
+
+    function clearAuthAndRedirect() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
+      localStorage.removeItem("staff_token");
+      localStorage.removeItem("staff_role");
+      localStorage.removeItem("staff_username");
+      window.location.replace("/login");
+    }
+
+    // Single Login: redirect to /login if no valid token or token expired
+    if (isTokenExpired(sharedToken)) {
+      clearAuthAndRedirect();
+    } else if (sharedRole !== "STAFF") {
       if (sharedToken && sharedRole) {
         sessionStorage.setItem("flash_message", "Permission denied. Tài khoản không có quyền truy cập phân hệ Staff.");
         window.location.replace(roleHome(sharedRole));
@@ -426,6 +452,10 @@
       headers.set("Content-Type", "application/json");
       if (state.token) headers.set("Authorization", `Bearer ${state.token}`);
       const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+      if (response.status === 401) {
+        clearAuthAndRedirect();
+        throw new Error("Token expired.");
+      }
       const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       if (!response.ok) throw new Error(data.message || data.error || "Không thể kết nối server.");
