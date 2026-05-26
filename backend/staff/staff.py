@@ -568,65 +568,112 @@ def get_daily_activity_report():
 @transactions_bp.route('/api/staff/analytics', methods=['GET'])
 @require_role(['STAFF', 'ADMIN'])
 def get_analytics():
-    """Analytics: thống kê xu hướng theo khoảng thời gian (7d/30d/90d/365d)."""
-    period = request.args.get('period', '30')  # days
-    try:
-        period_days = int(period)
-        if period_days not in (7, 30, 90, 365):
+    """Analytics: thống kê xu hướng theo khoảng thời gian.
+
+    Params:
+      - period: '7', '30', '90', '365', 'all' (days)
+      - group_by: 'day', 'month', 'year' (default: auto based on period)
+    """
+    period = request.args.get('period', '30')
+    group_by = request.args.get('group_by', '')
+
+    # Determine period days
+    if period == 'all':
+        period_days = 3650  # ~10 years
+    else:
+        try:
+            period_days = int(period)
+            if period_days not in (7, 30, 90, 365, 3650):
+                period_days = 30
+        except ValueError:
             period_days = 30
-    except ValueError:
-        period_days = 30
+
+    # Auto-select group_by based on period if not specified
+    if not group_by:
+        if period_days <= 30:
+            group_by = 'day'
+        elif period_days <= 365:
+            group_by = 'month'
+        else:
+            group_by = 'year'
+
+    if group_by not in ('day', 'month', 'year'):
+        group_by = 'day'
+
+    # Build date format and group expression based on group_by
+    if group_by == 'month':
+        date_fmt = "DATE_FORMAT(t.created_at, '%%Y-%%m')"
+        date_fmt_users = "DATE_FORMAT(created_at, '%%Y-%%m')"
+        label_fmt = 'month'
+    elif group_by == 'year':
+        date_fmt = "DATE_FORMAT(t.created_at, '%%Y')"
+        date_fmt_users = "DATE_FORMAT(created_at, '%%Y')"
+        label_fmt = 'year'
+    else:
+        date_fmt = "DATE(t.created_at)"
+        date_fmt_users = "DATE(created_at)"
+        label_fmt = 'day'
+
+    # Period filter
+    if period == 'all':
+        period_filter = ""
+        period_params = ()
+    else:
+        period_filter = "AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)"
+        period_params = (period_days,)
+
+    period_filter_users = period_filter.replace('t.created_at', 'created_at')
 
     try:
-        # 1. New savings accounts opened per day
+        # 1. New savings accounts opened
         db_cursor.execute(
-            """
-            SELECT DATE(t.created_at) AS day, COUNT(*) AS count
+            f"""
+            SELECT {date_fmt} AS label, COUNT(*) AS count
             FROM transactions t
             WHERE t.status = 'APPROVED'
               AND t.transaction_type = 'OPEN_SAVINGS'
-              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
-            GROUP BY day ORDER BY day ASC
-            """, (period_days,)
+              {period_filter}
+            GROUP BY label ORDER BY label ASC
+            """, period_params
         )
         new_accounts = [{'day': str(r[0]), 'count': int(r[1])} for r in db_cursor.fetchall()]
 
-        # 2. Total deposits per day (OPEN_SAVINGS + DEPOSIT_TO_SAVINGS)
+        # 2. Total deposits
         db_cursor.execute(
-            """
-            SELECT DATE(t.created_at) AS day, SUM(t.amount) AS total
+            f"""
+            SELECT {date_fmt} AS label, SUM(t.amount) AS total
             FROM transactions t
             WHERE t.status = 'APPROVED'
               AND t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS')
-              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
-            GROUP BY day ORDER BY day ASC
-            """, (period_days,)
+              {period_filter}
+            GROUP BY label ORDER BY label ASC
+            """, period_params
         )
         deposits = [{'day': str(r[0]), 'total': float(r[1] or 0)} for r in db_cursor.fetchall()]
 
-        # 3. Total withdrawals per day (WITHDRAW_FROM_SAVINGS + CLOSE_SAVINGS)
+        # 3. Total withdrawals
         db_cursor.execute(
-            """
-            SELECT DATE(t.created_at) AS day,
+            f"""
+            SELECT {date_fmt} AS label,
                    SUM(t.amount + COALESCE(t.interest_amount, 0)) AS total
             FROM transactions t
             WHERE t.status = 'APPROVED'
               AND t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS')
-              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
-            GROUP BY day ORDER BY day ASC
-            """, (period_days,)
+              {period_filter}
+            GROUP BY label ORDER BY label ASC
+            """, period_params
         )
         withdrawals = [{'day': str(r[0]), 'total': float(r[1] or 0)} for r in db_cursor.fetchall()]
 
-        # 4. Customer growth — new customers per day
+        # 4. Customer growth
         db_cursor.execute(
-            """
-            SELECT DATE(created_at) AS day, COUNT(*) AS count
+            f"""
+            SELECT {date_fmt_users} AS label, COUNT(*) AS count
             FROM users
             WHERE role = 'CUSTOMER'
-              AND created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
-            GROUP BY day ORDER BY day ASC
-            """, (period_days,)
+              {period_filter_users}
+            GROUP BY label ORDER BY label ASC
+            """, period_params
         )
         customer_growth = [{'day': str(r[0]), 'count': int(r[1])} for r in db_cursor.fetchall()]
 
@@ -647,15 +694,15 @@ def get_analytics():
 
         # 6. Summary totals for the period
         db_cursor.execute(
-            """
+            f"""
             SELECT
                 SUM(CASE WHEN t.transaction_type IN ('OPEN_SAVINGS', 'DEPOSIT_TO_SAVINGS') THEN t.amount ELSE 0 END) AS total_deposits,
                 SUM(CASE WHEN t.transaction_type IN ('WITHDRAW_FROM_SAVINGS', 'CLOSE_SAVINGS') THEN t.amount + COALESCE(t.interest_amount, 0) ELSE 0 END) AS total_withdrawals,
                 SUM(CASE WHEN t.transaction_type = 'OPEN_SAVINGS' THEN 1 ELSE 0 END) AS new_accounts
             FROM transactions t
             WHERE t.status = 'APPROVED'
-              AND t.created_at >= DATE_SUB(CURDATE(), INTERVAL %s DAY)
-            """, (period_days,)
+              {period_filter}
+            """, period_params
         )
         summary_row = db_cursor.fetchone()
         summary = {
@@ -666,7 +713,8 @@ def get_analytics():
         }
 
         return jsonify({
-            'period_days': period_days,
+            'period': period,
+            'group_by': group_by,
             'summary': summary,
             'account_status': account_status,
             'new_accounts': new_accounts,
