@@ -15,7 +15,7 @@ from common.savings_rules import (
     get_applicable_interest_rate,
     get_float_config,
     get_int_config,
-    rule_days_to_demo_days,
+    rule_days_to_real_days,
     term_days,
 )
 
@@ -224,7 +224,7 @@ def approve_transaction(transaction_id):
                 return jsonify({'message': 'Số tiền rút vượt quá số dư sổ!'}), 400
             held_days = days_between(opened_at)
             rule_min_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
-            required_days = rule_days_to_demo_days(rule_min_days)
+            required_days = rule_days_to_real_days(rule_min_days)
             if held_days < required_days:
                 return jsonify({'message': f'Sổ không kỳ hạn phải gửi trên {_rule_days_label(rule_min_days)} mới được rút!'}), 400
             # QĐ3: use applicable rate (non-term always uses own rate)
@@ -270,7 +270,7 @@ def approve_transaction(transaction_id):
             # For non-term: check min hold period
             if int(term_months or 0) == 0:
                 rule_min_days = int(min_days_hold or get_int_config(db_cursor, NON_TERM_MIN_DAYS_KEY, 15))
-                required_days = rule_days_to_demo_days(rule_min_days)
+                required_days = rule_days_to_real_days(rule_min_days)
                 if held_days < required_days:
                     return jsonify({'message': f'Chưa đủ thời gian giữ tối thiểu {_rule_days_label(rule_min_days)} để tất toán!'}), 400
 

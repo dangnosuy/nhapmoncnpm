@@ -2201,31 +2201,32 @@
       return `Giữ tối thiểu ${Number(item.min_days_hold || 0).toLocaleString("vi-VN")} ngày`;
     }
 
-    function demoMinutesHeld(openedAt) {
+    function realDaysHeld(openedAt) {
       const opened = new Date(openedAt).getTime();
       if (!opened) return 0;
-      return Math.max((Date.now() - opened) / 60000, 0);
+      return Math.max((Date.now() - opened) / 86400000, 0);
     }
 
-    function projectedValue(principal, annualRate, demoMinutes) {
-      return Number(principal || 0) * (1 + (Number(annualRate || 0) / 100) * (Math.max(demoMinutes, 0) / 12));
+    function projectedValue(principal, annualRate, daysHeld) {
+      const years = Math.max(Number(daysHeld) || 0, 0) / 365;
+      return Number(principal || 0) * (1 + (Number(annualRate || 0) / 100) * years);
     }
 
     function renderGrowthChart(item) {
       const principal = Number(item.principal_balance || 0);
       const annualRate = Number(item.interest_rate || 0);
       const term = Number(item.term_months || 0);
-      const duration = term > 0 ? term : 12;
-      const held = Math.min(demoMinutesHeld(item.opened_at), duration);
+      const durationDays = term > 0 ? term * 30 : 365;
+      const held = Math.min(realDaysHeld(item.opened_at), durationDays);
       const current = projectedValue(principal, annualRate, held);
-      const maturity = projectedValue(principal, annualRate, duration);
-      const points = [0, duration / 2, duration].map((minute, index) => {
-        const value = projectedValue(principal, annualRate, minute);
+      const maturity = projectedValue(principal, annualRate, durationDays);
+      const points = [0, durationDays / 2, durationDays].map((day, index) => {
+        const value = projectedValue(principal, annualRate, day);
         const x = 8 + index * 42;
         const y = 72 - ((value - principal) / Math.max(maturity - principal, 1)) * 52;
         return `${x},${Math.max(12, Math.min(72, y))}`;
       }).join(" ");
-      const progressX = 8 + (held / duration) * 84;
+      const progressX = 8 + (held / durationDays) * 84;
 
       return `
         <div class="growth-chart">
@@ -2241,7 +2242,7 @@
           </svg>
           <div class="growth-chart-labels">
             <span>Gốc ${money(principal)}</span>
-            <span>${term > 0 ? `Đáo hạn ${termLabel(term)}` : "Mốc 12 tháng demo"}: ${money(maturity)}</span>
+            <span>${term > 0 ? `Đáo hạn ${termLabel(term)}` : "Mốc 12 tháng"}: ${money(maturity)}</span>
           </div>
         </div>
       `;
@@ -2261,19 +2262,19 @@
         const principal = Number(item.principal_balance || 0);
         const annualRate = Number(item.interest_rate || 0);
         const term = Number(item.term_months || 0);
-        const duration = term > 0 ? term : 12;
-        const held = Math.min(demoMinutesHeld(item.opened_at), duration);
+        const durationDays = term > 0 ? term * 30 : 365;
+        const held = Math.min(realDaysHeld(item.opened_at), durationDays);
         const current = projectedValue(principal, annualRate, held);
-        const maturity = projectedValue(principal, annualRate, duration);
+        const maturity = projectedValue(principal, annualRate, durationDays);
         const profit = current - principal;
         const profitPercent = principal > 0 ? ((profit / principal) * 100).toFixed(2) : 0;
-        const progressPercent = duration > 0 ? ((held / duration) * 100).toFixed(1) : 0;
+        const progressPercent = durationDays > 0 ? ((held / durationDays) * 100).toFixed(1) : 0;
 
         // Generate smooth curve points for large chart
         const svgPoints = [];
         const svgWidth = 800;
         const svgHeight = 220;
-        const padLeft = 60;
+        const padLeft = 110;
         const padRight = 30;
         const padTop = 20;
         const padBottom = 40;
@@ -2282,14 +2283,14 @@
 
         const steps = 24;
         for (let i = 0; i <= steps; i++) {
-          const minute = (i / steps) * duration;
-          const value = projectedValue(principal, annualRate, minute);
+          const day = (i / steps) * durationDays;
+          const value = projectedValue(principal, annualRate, day);
           const x = padLeft + (i / steps) * chartW;
           const y = padTop + chartH - ((value - principal) / Math.max(maturity - principal, 1)) * chartH;
           svgPoints.push(`${x.toFixed(1)},${y.toFixed(1)}`);
         }
 
-        const progressX = padLeft + (held / duration) * chartW;
+        const progressX = padLeft + (held / durationDays) * chartW;
 
         // Y-axis labels
         const yLabels = [0, 0.25, 0.5, 0.75, 1.0].map((frac) => {
@@ -2300,9 +2301,9 @@
 
         // X-axis labels
         const xLabels = [0, 0.25, 0.5, 0.75, 1.0].map((frac) => {
-          const monthVal = frac * duration;
+          const monthVal = frac * term > 0 ? frac * term : frac * 12;
           const x = padLeft + frac * chartW;
-          const label = monthVal === 0 ? "Mở sổ" : `${monthVal} tháng`;
+          const label = monthVal === 0 ? "Mở sổ" : `${Math.round(monthVal)} tháng`;
           return `<text x="${x}" y="${svgHeight - 8}" text-anchor="middle" font-size="11" font-family="JetBrains Mono, monospace" font-weight="700" fill="#526070">${label}</text>`;
         }).join("");
 
