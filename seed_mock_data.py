@@ -7,6 +7,7 @@
 import mysql.connector
 from datetime import datetime, timedelta
 import random
+from werkzeug.security import generate_password_hash
 
 random.seed(42)  # Reproducible
 
@@ -31,6 +32,66 @@ STAFF_ID = 2
 # Customer user IDs
 CUSTOMERS = list(range(36, 56))  # 36-55
 
+
+def ensure_mock_users():
+    password_hash = generate_password_hash('Password123!', method='pbkdf2:sha256')
+    users = [
+        (1, 'admin@gmail.com', generate_password_hash('admin123', method='pbkdf2:sha256'), 'System Admin', 'ADMIN000001', '9000000001', 'ADMIN'),
+        (2, 'staff@gmail.com', generate_password_hash('staff123', method='pbkdf2:sha256'), 'Default Staff', 'STAFF000001', '9000000002', 'STAFF'),
+        (34, 'staff2@gmail.com', generate_password_hash('staff123', method='pbkdf2:sha256'), 'Backup Staff', 'STAFF000034', '9000000034', 'STAFF'),
+        (36, 'an@test.local', password_hash, 'An', 'CUST000036', '9000000036', 'CUSTOMER'),
+        (37, 'binh@test.local', password_hash, 'Bình', 'CUST000037', '9000000037', 'CUSTOMER'),
+        (38, 'cuong@test.local', password_hash, 'Cường', 'CUST000038', '9000000038', 'CUSTOMER'),
+        (39, 'dung@test.local', password_hash, 'Dung', 'CUST000039', '9000000039', 'CUSTOMER'),
+        (40, 'em@test.local', password_hash, 'Em', 'CUST000040', '9000000040', 'CUSTOMER'),
+        (41, 'giang@test.local', password_hash, 'Giang', 'CUST000041', '9000000041', 'CUSTOMER'),
+        (42, 'hai@test.local', password_hash, 'Hải', 'CUST000042', '9000000042', 'CUSTOMER'),
+        (43, 'huong@test.local', password_hash, 'Hương', 'CUST000043', '9000000043', 'CUSTOMER'),
+        (44, 'khanh@test.local', password_hash, 'Khánh', 'CUST000044', '9000000044', 'CUSTOMER'),
+        (45, 'lan@test.local', password_hash, 'Lan', 'CUST000045', '9000000045', 'CUSTOMER'),
+        (46, 'minh@test.local', password_hash, 'Minh', 'CUST000046', '9000000046', 'CUSTOMER'),
+        (47, 'nga@test.local', password_hash, 'Nga', 'CUST000047', '9000000047', 'CUSTOMER'),
+        (48, 'phuc@test.local', password_hash, 'Phúc', 'CUST000048', '9000000048', 'CUSTOMER'),
+        (49, 'quynh@test.local', password_hash, 'Quỳnh', 'CUST000049', '9000000049', 'CUSTOMER'),
+        (50, 'son@test.local', password_hash, 'Sơn', 'CUST000050', '9000000050', 'CUSTOMER'),
+        (51, 'thao@test.local', password_hash, 'Thảo', 'CUST000051', '9000000051', 'CUSTOMER'),
+        (52, 'thanh@test.local', password_hash, 'Thanh', 'CUST000052', '9000000052', 'CUSTOMER'),
+        (53, 'uyen@test.local', password_hash, 'Uyên', 'CUST000053', '9000000053', 'CUSTOMER'),
+        (54, 'viet@test.local', password_hash, 'Việt', 'CUST000054', '9000000054', 'CUSTOMER'),
+        (55, 'xuan@test.local', password_hash, 'Xuân', 'CUST000055', '9000000055', 'CUSTOMER'),
+    ]
+
+    cursor.executemany(
+        """
+        INSERT IGNORE INTO users
+            (user_id, email, password_hash, full_name, identity_card, account_number, role)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """,
+        users,
+    )
+    db.commit()
+
+
+def ensure_mock_products():
+    products = [
+        (PRODUCT_KKH, 'Không kỳ hạn', 0, 0.50, 15, 'Rút linh hoạt sau thời gian giữ tối thiểu.'),
+        (PRODUCT_3M, 'Tiết kiệm 3 tháng', 3, 5.00, 0, 'Kỳ hạn 3 tháng.'),
+        (PRODUCT_6M, 'Tiết kiệm 6 tháng', 6, 5.50, 0, 'Kỳ hạn 6 tháng.'),
+        (PRODUCT_9M, 'Tiết kiệm 9 tháng', 9, 5.80, 0, 'Kỳ hạn 9 tháng.'),
+        (PRODUCT_12M, 'Tiết kiệm 12 tháng', 12, 6.00, 0, 'Kỳ hạn 12 tháng.'),
+        (PRODUCT_24M, 'Tiết kiệm 24 tháng', 24, 6.50, 0, 'Kỳ hạn 24 tháng.'),
+    ]
+
+    cursor.executemany(
+        """
+        INSERT IGNORE INTO savings_products
+            (product_id, name, term_months, interest_rate, min_days_hold, is_active, description)
+        VALUES (%s, %s, %s, %s, %s, TRUE, %s)
+        """,
+        products,
+    )
+    db.commit()
+
 def dt(s):
     return datetime.strptime(s, "%Y-%m-%d %H:%M:%S")
 
@@ -49,6 +110,8 @@ def rand_amount(base, variance=0.4):
 # ==========================================
 # 1. CLEAR OLD MOCK DATA (only for users 36-55)
 # ==========================================
+ensure_mock_users()
+ensure_mock_products()
 cursor.execute("DELETE FROM transactions WHERE user_id >= 36")
 cursor.execute("DELETE FROM savings_accounts WHERE user_id >= 36")
 db.commit()

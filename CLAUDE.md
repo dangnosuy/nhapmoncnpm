@@ -113,15 +113,15 @@ python test_flow.py
 
 ## Existing Guidelines
 
-See `AGENTS.md` for additional repository guidelines (commit style, PR guidelines, security tips). The AGENTS.md also documents the `rtk` CLI proxy policy for token-optimized command execution.
+See `docs/AGENTS.md` for additional repository guidelines (commit style, PR guidelines, security tips). The docs/AGENTS.md also documents the `rtk` CLI proxy policy for token-optimized command execution.
 
 ## Project Documents
 
-- `Project_Specification_Savings_System.md` — Full project spec (15.7K)
-- `detai.md` — Topic description
-- `LAB_COMPLETION_GUIDE.md` — Lab completion guide
-- `BaoCaoCNPM.docs.pdf` / `BaoCaoGiuaKy_*.docx` — Course deliverables
-- `SKILL.md` — Skill documentation
+- `docs/Project_Specification_Savings_System.md` — Full project spec (15.7K)
+- `docs/detai.md` — Topic description
+- `docs/LAB_COMPLETION_GUIDE.md` — Lab completion guide
+- `docs/BaoCaoCNPM.docs.pdf` / `docs/BaoCaoGiuaKy_*.docx` — Course deliverables
+- `docs/SKILL.md` — Skill documentation
 
 ## Notes
 

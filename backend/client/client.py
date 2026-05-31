@@ -102,7 +102,7 @@ def _pending_wallet_reservations(cursor, user_id):
 
 def _available_wallet_balance(cursor, user_id, wallet_balance=None):
     if wallet_balance is None:
-        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
         row = cursor.fetchone()
         wallet_balance = float(row[0]) if row else 0
     reserved_amount = _pending_wallet_reservations(cursor, user_id)
@@ -543,7 +543,7 @@ def transfer_to_account_number():
     conn, cursor = get_db()
     try:
         cursor.execute(
-            "SELECT user_id, wallet_balance, full_name, account_number FROM users WHERE user_id = %s AND role = 'CUSTOMER'",
+            "SELECT user_id, wallet_balance, full_name, account_number FROM users WHERE user_id = %s AND role = 'CUSTOMER' FOR UPDATE",
             (user_id,)
         )
         sender = cursor.fetchone()
@@ -650,7 +650,7 @@ def create_open_savings_request():
         if not product[1]:
             return jsonify({"message": "Gói tiết kiệm hiện đang tạm khóa!"}), 400
 
-        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
         user = cursor.fetchone()
         if not user:
             return jsonify({"message": "Không tìm thấy khách hàng!"}), 404
@@ -741,7 +741,7 @@ def create_savings_deposit_request(account_id):
                     "demo_maturity_date": demo_maturity_date(account[2], t_months),
                 }), 400
 
-        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+        cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
         wallet = float(cursor.fetchone()[0])
         available_wallet, pending_reserved_amount = _available_wallet_balance(cursor, user_id, wallet)
         if available_wallet < amount:

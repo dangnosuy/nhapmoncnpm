@@ -5,6 +5,44 @@
 
 USE modern_savings_db;
 
+-- Prerequisite users for this mock dataset.
+-- The hash below is for the password `Password123!`.
+-- Admin/staff accounts use the same defaults as the backend.
+INSERT IGNORE INTO users (user_id, email, password_hash, full_name, identity_card, account_number, address, role, wallet_balance, status) VALUES
+(1, 'admin@gmail.com', 'pbkdf2:sha256:1000000$60159ovLjFg5TWxZ$f2b72c15171671ab793004def12aa0f47e1833581a79d376085e5d841fd87c4f', 'System Admin', 'ADMIN000001', '9000000001', NULL, 'ADMIN', 0.00, 'ACTIVE'),
+(2, 'staff@gmail.com', 'pbkdf2:sha256:1000000$ZMbC4Ri0rbP8pvVR$aa04fd73fbb750f69ec96b1894f6f801b5628eddff2df14918230de172b6036a', 'Default Staff', 'STAFF000001', '9000000002', NULL, 'STAFF', 0.00, 'ACTIVE'),
+(34, 'staff2@gmail.com', 'pbkdf2:sha256:1000000$ZMbC4Ri0rbP8pvVR$aa04fd73fbb750f69ec96b1894f6f801b5628eddff2df14918230de172b6036a', 'Backup Staff', 'STAFF000034', '9000000034', NULL, 'STAFF', 0.00, 'ACTIVE'),
+(36, 'an@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'An', 'CUST000036', '9000000036', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(37, 'binh@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Bình', 'CUST000037', '9000000037', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(38, 'cuong@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Cường', 'CUST000038', '9000000038', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(39, 'dung@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Dung', 'CUST000039', '9000000039', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(40, 'em@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Em', 'CUST000040', '9000000040', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(41, 'giang@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Giang', 'CUST000041', '9000000041', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(42, 'hai@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Hải', 'CUST000042', '9000000042', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(43, 'huong@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Hương', 'CUST000043', '9000000043', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(44, 'khanh@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Khánh', 'CUST000044', '9000000044', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(45, 'lan@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Lan', 'CUST000045', '9000000045', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(46, 'minh@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Minh', 'CUST000046', '9000000046', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(47, 'nga@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Nga', 'CUST000047', '9000000047', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(48, 'phuc@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Phúc', 'CUST000048', '9000000048', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(49, 'quynh@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Quỳnh', 'CUST000049', '9000000049', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(50, 'son@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Sơn', 'CUST000050', '9000000050', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(51, 'thao@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Thảo', 'CUST000051', '9000000051', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(52, 'thanh@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Thanh', 'CUST000052', '9000000052', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(53, 'uyen@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Uyên', 'CUST000053', '9000000053', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(54, 'viet@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Việt', 'CUST000054', '9000000054', NULL, 'CUSTOMER', 0.00, 'ACTIVE'),
+(55, 'xuan@test.local', 'pbkdf2:sha256:1000000$S5ruj40Z7NOzwMIg$968b3d0f5a9a3b57d3503db02fd7019c6f9e2f103ff154ea879a9ac99ce1e368', 'Xuân', 'CUST000055', '9000000055', NULL, 'CUSTOMER', 0.00, 'ACTIVE');
+
+-- Prerequisite savings products for this mock dataset.
+-- These IDs match the account mapping used below.
+INSERT IGNORE INTO savings_products (product_id, name, term_months, interest_rate, min_days_hold, is_active, description) VALUES
+(10, 'Không kỳ hạn', 0, 0.50, 15, TRUE, 'Rút linh hoạt sau thời gian giữ tối thiểu.'),
+(11, 'Tiết kiệm 3 tháng', 3, 5.00, 0, TRUE, 'Kỳ hạn 3 tháng.'),
+(12, 'Tiết kiệm 6 tháng', 6, 5.50, 0, TRUE, 'Kỳ hạn 6 tháng.'),
+(13, 'Tiết kiệm 9 tháng', 9, 5.80, 0, TRUE, 'Kỳ hạn 9 tháng.'),
+(14, 'Tiết kiệm 12 tháng', 12, 6.00, 0, TRUE, 'Kỳ hạn 12 tháng.'),
+(15, 'Tiết kiệm 24 tháng', 24, 6.50, 0, TRUE, 'Kỳ hạn 24 tháng.');
+
 -- Product ID mapping:
 -- 10 = Không kỳ hạn, 11 = 3 tháng, 12 = 6 tháng, 13 = 9 tháng, 14 = 12 tháng, 15 = 24 tháng
 

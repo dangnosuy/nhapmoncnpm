@@ -130,7 +130,7 @@ def approve_transaction(transaction_id):
             db_cursor.execute("UPDATE users SET wallet_balance = wallet_balance + %s WHERE user_id = %s", (amount, user_id))
             
         elif transaction_type == 'WITHDRAW_FROM_WALLET':
-            db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+            db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
             wallet = float(db_cursor.fetchone()[0])
             if wallet < amount:
                 return jsonify({'message': 'Số dư ví không đủ để rút!'}), 400
@@ -148,7 +148,7 @@ def approve_transaction(transaction_id):
                 return jsonify({'message': 'Gói tiết kiệm không tồn tại!'}), 404
             if not product[0]:
                 return jsonify({'message': 'Gói tiết kiệm hiện đang tạm khóa!'}), 400
-            db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+            db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
             wallet = float(db_cursor.fetchone()[0])
             if wallet < amount:
                 return jsonify({'message': 'Số dư trong ví không đủ để mở sổ tiết kiệm!'}), 400
@@ -194,7 +194,7 @@ def approve_transaction(transaction_id):
                     # Must be at exactly a term boundary (within small tolerance)
                     if terms_elapsed < 1:
                         return jsonify({'message': f'Sổ có kỳ hạn {_term_label(t_months)} chỉ được gửi thêm khi đã đến kỳ hạn tính lãi!'}), 400
-            db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s", (user_id,))
+            db_cursor.execute("SELECT wallet_balance FROM users WHERE user_id = %s FOR UPDATE", (user_id,))
             wallet = float(db_cursor.fetchone()[0])
             if wallet < amount:
                 return jsonify({'message': 'Số dư ví không đủ để gửi thêm vào sổ!'}), 400
