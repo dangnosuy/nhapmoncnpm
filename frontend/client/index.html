@@ -3293,7 +3293,7 @@
     async function handleCloseSavingsRequest(accountId) {
       const confirmed = await openActionModal({
         title: "Tất toán sổ",
-        message: `Tạo yêu cầu tất toán cho sổ #${accountId}. Staff hoặc Admin sẽ duyệt trước khi tiền về ví.`,
+        message: `Tạo yêu cầu tất toán cho sổ #${accountId}. Nhân viên sẽ duyệt trước khi tiền về ví.`,
         confirmText: "Tất toán"
       });
       if (!confirmed) return;
@@ -3337,7 +3337,7 @@
     async function handleSavingsWithdrawRequest(accountId) {
       const amount = await requestAmount(
         "Rút từ sổ",
-        `Nhập số tiền muốn rút từ sổ không kỳ hạn #${accountId}. Staff hoặc Admin sẽ duyệt trước khi tiền về ví.`,
+        `Nhập số tiền muốn rút từ sổ không kỳ hạn #${accountId}. Nhân viên sẽ duyệt trước khi tiền về ví.`,
         "50000"
       );
       if (!amount || amount <= 0) {

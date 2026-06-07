@@ -24,7 +24,9 @@ test('customer, staff, and admin role flows are usable', async ({ page }) => {
 
   page.on('pageerror', (error) => jsErrors.push(error.message));
   page.on('requestfailed', (request) => {
-    if (!request.url().includes('/api/events')) {
+    const url = new URL(request.url());
+    const isAppRequest = url.hostname === '127.0.0.1' || url.hostname === 'localhost';
+    if (isAppRequest && !url.pathname.includes('/api/events')) {
       failedRequests.push(`${request.method()} ${request.url()}`);
     }
   });

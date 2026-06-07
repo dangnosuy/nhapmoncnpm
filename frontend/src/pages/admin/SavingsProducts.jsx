@@ -130,7 +130,7 @@ export default function SavingsProducts() {
         }}>
           <div>
             <label style={{ fontSize: 12, color: '#888' }}>Tên gói *</label>
-            <input style={inputStyle} placeholder="VD: Tiết kiệm 3 tháng" required
+            <input style={inputStyle} placeholder="VD: 3 tháng kỳ hạn" required
               value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div>

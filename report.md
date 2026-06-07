@@ -1,545 +1,865 @@
-# BÁO CÁO ĐỒ ÁN: SMART SAVINGS — HỆ THỐNG QUẢN LÝ TIẾT KIỆM
+# BÁO CÁO ĐỒ ÁN: SMART SAVINGS - HỆ THỐNG QUẢN LÝ SỔ TIẾT KIỆM
 
-**Nhóm 13 — Nhập môn Công nghệ Phần mềm (SE104)**
-
----
-
-## Mục lục
-
-1. [Giới thiệu đề tài](#1-giới-thiệu-đề-tài)
-2. [Kiến trúc hệ thống](#2-kiến-trúc-hệ-thống)
-3. [Cơ sở dữ liệu](#3-cơ-sở-dữ-liệu)
-4. [Backend API](#4-backend-api)
-5. [Frontend](#5-frontend)
-6. [Business Logic & Quy tắc nghiệp vụ](#6-business-logic--quy-tắc-nghiệp-vụ)
-7. [Test Cases](#7-test-cases)
-8. [Đánh giá & Hạn chế](#8-đánh-giá--hạn-chế)
+**Môn học:** Nhập môn Công nghệ Phần mềm  
+**Đề tài:** Hệ thống quản lý sổ tiết kiệm ngân hàng  
+**Nhóm:** Nhóm 13  
+**Ngày cập nhật:** 31/05/2026
 
 ---
 
 ## 1. Giới thiệu đề tài
 
-**Smart Savings** là hệ thống quản lý tiết kiệm ngân hàng với 3 vai trò người dùng:
+Smart Savings là hệ thống quản lý gửi tiết kiệm ngân hàng theo mô hình phân quyền 3 vai trò: khách hàng, nhân viên ngân hàng và quản trị viên. Hệ thống mô phỏng quy trình nghiệp vụ gửi tiết kiệm tại ngân hàng, kết hợp quy trình số hóa trong đó khách hàng tạo yêu cầu giao dịch online và nhân viên duyệt trước khi dữ liệu tài chính được cập nhật.
 
-| Vai trò | Chức năng chính |
-|---------|-----------------|
-| **CUSTOMER** | Mở sổ tiết kiệm, gửi/rút tiền, chuyển khoản, xem báo cáo cá nhân |
-| **STAFF** | Duyệt/từ chối giao dịch, quản lý vận hành, xem báo cáo hệ thống |
-| **ADMIN** | Quản lý người dùng, sản phẩm tiết kiệm, cấu hình hệ thống, báo cáo tổng quan |
+Mục tiêu chính của hệ thống:
 
-**Công nghệ sử dụng:**
-- **Backend:** Python 3, Flask (REST API), MySQL (mysql-connector-python), JWT authentication, Server-Sent Events (SSE)
-- **Frontend:** React + Vite (Admin SPA), HTML/CSS/JS thuần (Client SPA & Staff SPA)
-- **Testing:** Python integration tests, Playwright E2E
+- Quản lý tài khoản khách hàng, nhân viên và quản trị viên.
+- Quản lý sản phẩm tiết kiệm, kỳ hạn, lãi suất và tham số nghiệp vụ.
+- Cho phép khách hàng mở sổ, gửi thêm, rút tiền, tất toán và chuyển khoản.
+- Áp dụng mô hình Maker-Checker: khách hàng tạo yêu cầu, nhân viên kiểm tra và duyệt.
+- Cung cấp báo cáo BM5 và thống kê xu hướng cho nhân viên/quản trị viên.
+- Đảm bảo phân quyền dữ liệu: chỉ khách hàng được xem số dư ví cá nhân; Staff/Admin không xem số dư ví và không xem số dư từng sổ của khách hàng trong các màn tra cứu.
 
 ---
 
-## 2. Kiến trúc hệ thống
+## 2. Công nghệ sử dụng
 
-### 2.1 Tổng quan kiến trúc
+| Thành phần | Công nghệ |
+|---|---|
+| Backend | Python 3, Flask, Flask-CORS |
+| Database | MySQL, `mysql-connector-python` |
+| Authentication | JWT (`PyJWT`), password hash `werkzeug.security` |
+| Frontend Admin | React, Vite, React Router, Axios |
+| Frontend Client | HTML/CSS/JavaScript thuần, SVG chart |
+| Frontend Staff | HTML/CSS/JavaScript thuần, Chart.js qua CDN cho thống kê xu hướng |
+| Realtime | Server-Sent Events (SSE) |
+| Test | Python integration test, Playwright E2E |
 
+---
+
+## 3. Kiến trúc hệ thống
+
+### 3.1 Tổng quan
+
+```text
+Người dùng
+  |-- Admin SPA  (React + Vite)
+  |-- Client SPA (HTML/CSS/JS)
+  |-- Staff SPA  (HTML/CSS/JS)
+        |
+        | REST API + SSE
+        v
+Flask Backend
+  |-- common: auth, db, requireRole, events, savings_rules
+  |-- admin: quản lý người dùng, sản phẩm, cấu hình
+  |-- client: hồ sơ, sổ tiết kiệm, chuyển khoản, request giao dịch
+  |-- staff: duyệt giao dịch, tra cứu, báo cáo, analytics
+        |
+        v
+MySQL Database: modern_savings_db
 ```
-┌──────────────────────────────────────────────────────┐
-│                    Frontend                           │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  │
-│  │  Admin SPA  │  │  Client SPA  │  │  Staff SPA  │  │
-│  │ (React+Vite)│  │(Single HTML) │  │(Single HTML)│  │
-│  └──────┬──────┘  └──────┬───────┘  └──────┬──────┘  │
-│         │                │                  │         │
-│         └────────────────┼──────────────────┘         │
-│                          │ REST API + SSE              │
-└──────────────────────────┼───────────────────────────┘
-                           │
-┌──────────────────────────┼───────────────────────────┐
-│                    Backend (Flask)                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐           │
-│  │  Admin   │  │  Client  │  │  Staff   │           │
-│  │ Blueprint│  │ Blueprint│  │ Blueprint│           │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘           │
-│       └──────────────┼─────────────┘                  │
-│              ┌───────┴────────┐                       │
-│              │  Common Layer  │                       │
-│              │ auth, db, SSE  │                       │
-│              └───────┬────────┘                       │
-└──────────────────────┼───────────────────────────────┘
-                       │
-                ┌──────┴──────┐
-                │   MySQL DB  │
-                │modern_savings│
-                └─────────────┘
-```
 
-### 2.2 Cấu trúc thư mục
+### 3.2 Cấu trúc thư mục chính
 
-```
-nhapmoncnpm/
+```text
+nmcnpm/
 ├── backend/
-│   ├── app.py                  # App factory, blueprint registration, auto-migration
+│   ├── app.py
 │   ├── common/
-│   │   ├── db.py               # MySQL connection (thread-local, lazy init)
-│   │   ├── auth.py             # JWT auth: login, register, forgot-password
-│   │   ├── events.py           # SSE pub/sub real-time events
-│   │   ├── requireRole.py      # Role-check decorator (@require_role)
-│   │   └── savings_rules.py    # Business rules: lãi suất, kỳ hạn, auto-rollover
-│   ├── admin/admin.py          # Admin endpoints (users, products, configs)
-│   ├── staff/staff.py          # Staff endpoints (approve/reject, reports)
-│   └── client/client.py        # Customer endpoints (savings, wallet, transfers)
+│   │   ├── auth.py
+│   │   ├── db.py
+│   │   ├── events.py
+│   │   ├── requireRole.py
+│   │   └── savings_rules.py
+│   ├── admin/admin.py
+│   ├── client/client.py
+│   └── staff/staff.py
 ├── frontend/
-│   ├── index.html              # Admin SPA entry point
-│   ├── src/                    # Admin React source
-│   │   ├── App.jsx             # Router, ProtectedRoute, role-based redirects
-│   │   ├── api/axios.js        # Axios instance, JWT interceptor
+│   ├── index.html
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── api/axios.js
 │   │   ├── layouts/AdminLayout.jsx
-│   │   └── pages/admin/        # Dashboard, Users, Products, Configs, Reports
-│   ├── client/index.html       # Customer SPA (standalone ~3476 lines)
-│   └── staff/index.html        # Staff SPA (standalone ~920 lines)
-├── smart_savings.sql           # DB schema + seed data
-├── test_flow.py                # Python integration test (happy path)
-├── run_api_tests.py            # Comprehensive API test suite
-└── requirements.txt
+│   │   └── pages/admin/
+│   ├── client/index.html
+│   ├── staff/index.html
+│   └── tests/role-flow.spec.js
+├── smart_savings.sql
+├── seed_mock_data.py
+├── seed_mock_data.sql
+├── test_flow.py
+├── requirements.txt
+└── report.md
 ```
-
-### 2.3 Multi-Entry Vite Build
-
-Hệ thống sử dụng **3 SPA riêng biệt** cho 3 vai trò:
-
-| App | Entry | Công nghệ | Đặc điểm |
-|-----|-------|-----------|----------|
-| Admin | `frontend/index.html` | React + Vite | Build qua Vite, hot-reload dev |
-| Client | `frontend/client/index.html` | HTML/CSS/JS thuần | Single-file, không cần build |
-| Staff | `frontend/staff/index.html` | HTML/CSS/JS thuần | Single-file, không cần build |
-
-**Vite dev server:**
-- Proxy `/api/*` → `http://localhost:5000`
-- Redirect `/client` → `/client/`, `/staff` → `/staff/`
-
-**Routing dựa trên role:** Sau khi login, `App.jsx` dùng `ExternalRoleRoute` để redirect STAFF → `/staff/` và CUSTOMER → `/client/` qua `window.location.replace`.
 
 ---
 
-## 3. Cơ sở dữ liệu
+## 4. Cơ sở dữ liệu
 
-### 3.1 Database: `modern_savings_db`
+### 4.1 Database
 
-### 3.2 Sơ đồ quan hệ (ER Diagram mô tả)
+Tên database: `modern_savings_db`
 
+File schema: `smart_savings.sql`
+
+### 4.2 Các bảng chính
+
+#### `users`
+
+Lưu thông tin tài khoản đăng nhập và phân quyền.
+
+| Cột | Ý nghĩa |
+|---|---|
+| `user_id` | Khóa chính |
+| `email` | Email đăng nhập, duy nhất |
+| `password_hash` | Mật khẩu đã hash |
+| `full_name` | Họ tên |
+| `identity_card` | CMND/CCCD, duy nhất |
+| `account_number` | Số tài khoản 10 chữ số |
+| `address` | Địa chỉ |
+| `role` | `CUSTOMER`, `STAFF`, `ADMIN` |
+| `wallet_balance` | Số dư ví, chỉ Client được xem |
+| `status` | `ACTIVE` hoặc `LOCKED` |
+| `created_at` | Thời điểm tạo |
+
+#### `savings_products`
+
+Lưu danh sách sản phẩm tiết kiệm.
+
+| Cột | Ý nghĩa |
+|---|---|
+| `product_id` | Khóa chính |
+| `name` | Tên sản phẩm |
+| `term_months` | Kỳ hạn theo tháng, `0` là không kỳ hạn |
+| `interest_rate` | Lãi suất năm (%) |
+| `min_days_hold` | Số ngày giữ tối thiểu |
+| `is_active` | Sản phẩm còn hoạt động hay không |
+| `description` | Mô tả |
+
+Hệ thống hiện chỉ dùng 3 gói tiết kiệm chính:
+
+| Mã gói | Tên gói | Kỳ hạn | Lãi suất năm | Giữ tối thiểu |
+|---:|---|---:|---:|---:|
+| 10 | Không kỳ hạn | 0 tháng | 0.50% | 15 ngày |
+| 11 | 3 tháng kỳ hạn | 3 tháng | 4.50% | 0 ngày |
+| 12 | 6 tháng kỳ hạn | 6 tháng | 5.20% | 0 ngày |
+
+#### `savings_accounts`
+
+Lưu sổ tiết kiệm của khách hàng.
+
+| Cột | Ý nghĩa |
+|---|---|
+| `account_id` | Mã sổ |
+| `user_id` | Chủ sở hữu |
+| `product_id` | Loại sản phẩm |
+| `principal_balance` | Số tiền gốc |
+| `opened_at` | Ngày mở hoặc ngày tái tục gần nhất |
+| `status` | `ACTIVE` hoặc `CLOSED` |
+
+#### `transactions`
+
+Lưu lịch sử giao dịch và hàng đợi duyệt.
+
+| Cột | Ý nghĩa |
+|---|---|
+| `transaction_id` | Mã giao dịch |
+| `user_id` | Người tạo giao dịch |
+| `account_id` | Sổ liên quan, có thể null khi đang chờ mở sổ |
+| `target_product_id` | Sản phẩm đích khi mở sổ |
+| `amount` | Số tiền giao dịch |
+| `transaction_type` | Loại giao dịch |
+| `status` | `PENDING`, `APPROVED`, `REJECTED` |
+| `interest_amount` | Tiền lãi phát sinh khi rút/tất toán |
+| `processed_by` | Nhân viên xử lý |
+| `created_at` | Ngày tạo |
+
+Các loại giao dịch:
+
+- `DEPOSIT_TO_WALLET`
+- `WITHDRAW_FROM_WALLET`
+- `OPEN_SAVINGS`
+- `DEPOSIT_TO_SAVINGS`
+- `WITHDRAW_FROM_SAVINGS`
+- `CLOSE_SAVINGS`
+- `TRANSFER_OUT`
+- `TRANSFER_IN`
+- `AUTO_ROLLOVER`
+
+#### `system_configs`
+
+Lưu tham số nghiệp vụ để Admin có thể thay đổi.
+
+| Cấu hình | Mặc định | Ý nghĩa |
+|---|---:|---|
+| `MIN_OPEN_AMOUNT` | 1,000,000 | Số tiền tối thiểu khi mở sổ |
+| `MIN_SAVINGS_DEPOSIT_AMOUNT` | 100,000 | Số tiền tối thiểu khi gửi thêm |
+| `NON_TERM_MIN_DAYS` | 15 | Số ngày giữ tối thiểu với sổ không kỳ hạn |
+
+### 4.3 Quan hệ dữ liệu
+
+```text
+users 1 --- N savings_accounts
+users 1 --- N transactions
+savings_products 1 --- N savings_accounts
+savings_products 1 --- N transactions (target_product_id)
+users 1 --- N transactions (processed_by)
 ```
-users (1) ──────< (N) savings_accounts
-users (1) ──────< (N) transactions
-savings_products (1) ─< (N) savings_accounts
-savings_products (1) ─< (N) transactions (target_product_id)
-users (1) ──────< (N) transactions (processed_by)
-```
-
-### 3.3 Chi tiết các bảng
-
-#### Bảng `users`
-| Cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
-|-----|-------------|-----------|--------|
-| `user_id` | INT | PK, AUTO_INCREMENT | ID người dùng |
-| `email` | VARCHAR(100) | NOT NULL, UNIQUE | Email đăng nhập |
-| `password_hash` | VARCHAR(255) | NOT NULL | Mật khẩu hash (pbkdf2:sha256) |
-| `full_name` | VARCHAR(100) | NOT NULL | Họ tên |
-| `identity_card` | VARCHAR(20) | UNIQUE | CMND/CCCD |
-| `account_number` | VARCHAR(20) | UNIQUE | Số tài khoản 10 chữ số |
-| `address` | VARCHAR(255) | nullable | Địa chỉ |
-| `role` | ENUM('CUSTOMER','STAFF','ADMIN') | DEFAULT 'CUSTOMER' | Vai trò |
-| `wallet_balance` | DECIMAL(15,2) | DEFAULT 0.00 | Số dư ví |
-| `status` | ENUM('ACTIVE','LOCKED') | DEFAULT 'ACTIVE' | Trạng thái tài khoản |
-| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Ngày tạo |
-
-#### Bảng `savings_products`
-| Cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
-|-----|-------------|-----------|--------|
-| `product_id` | INT | PK, AUTO_INCREMENT | ID sản phẩm |
-| `name` | VARCHAR(100) | NOT NULL | Tên sản phẩm |
-| `term_months` | INT | NOT NULL, DEFAULT 0 | Kỳ hạn (tháng), 0 = không kỳ hạn |
-| `interest_rate` | DECIMAL(5,2) | NOT NULL | Lãi suất năm (%) |
-| `min_days_hold` | INT | DEFAULT 0 | Số ngày giữ tối thiểu |
-| `is_active` | BOOLEAN | DEFAULT TRUE | Đang hoạt động |
-| `description` | TEXT | nullable | Mô tả sản phẩm |
-
-#### Bảng `savings_accounts`
-| Cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
-|-----|-------------|-----------|--------|
-| `account_id` | INT | PK, AUTO_INCREMENT | ID sổ tiết kiệm |
-| `user_id` | INT | NOT NULL, FK → users | Chủ sở hữu |
-| `product_id` | INT | NOT NULL, FK → savings_products | Loại sản phẩm |
-| `principal_balance` | DECIMAL(15,2) | NOT NULL, CHECK >= 0 | Số dư gốc |
-| `opened_at` | DATETIME | DEFAULT CURRENT_TIMESTAMP | Ngày mở |
-| `status` | ENUM('ACTIVE','CLOSED') | DEFAULT 'ACTIVE' | Trạng thái |
-
-#### Bảng `transactions`
-| Cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
-|-----|-------------|-----------|--------|
-| `transaction_id` | INT | PK, AUTO_INCREMENT | ID giao dịch |
-| `user_id` | INT | NOT NULL, FK → users | Người tạo |
-| `account_id` | INT | nullable, FK → savings_accounts | Sổ tiết kiệm liên quan |
-| `target_product_id` | INT | nullable, FK → savings_products | Sản phẩm đích (khi OPEN) |
-| `amount` | DECIMAL(15,2) | NOT NULL, CHECK > 0 | Số tiền |
-| `transaction_type` | ENUM (9 loại) | NOT NULL | Loại giao dịch |
-| `status` | ENUM('PENDING','APPROVED','REJECTED') | DEFAULT 'PENDING' | Trạng thái duyệt |
-| `interest_amount` | DECIMAL(15,2) | DEFAULT 0.00 | Tiền lãi |
-| `processed_by` | INT | nullable, FK → users | Nhân viên xử lý |
-| `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Ngày tạo |
-
-**9 loại giao dịch:**
-`DEPOSIT_TO_WALLET`, `WITHDRAW_FROM_WALLET`, `OPEN_SAVINGS`, `DEPOSIT_TO_SAVINGS`, `WITHDRAW_FROM_SAVINGS`, `CLOSE_SAVINGS`, `TRANSFER_OUT`, `TRANSFER_IN`, `AUTO_ROLLOVER`
-
-#### Bảng `system_configs`
-| Cột | Kiểu dữ liệu | Ràng buộc | Mô tả |
-|-----|-------------|-----------|--------|
-| `config_key` | VARCHAR(50) | PK | Tên tham số |
-| `config_value` | VARCHAR(255) | NOT NULL | Giá trị |
-| `description` | VARCHAR(255) | nullable | Mô tả |
-
-### 3.4 Dữ liệu mặc định
-
-- **system_configs:** `MIN_OPEN_AMOUNT=1000000`, `MIN_SAVINGS_DEPOSIT_AMOUNT=100000`, `NON_TERM_MIN_DAYS=15`
-- **Tài khoản mặc định:** Admin (`admin@gmail.com/admin123`), Staff (`staff@gmail.com/staff123`) — tạo tự động khi khởi động server
-- **Sản phẩm mặc định:** Không kỳ hạn (0.5%/năm), 3 tháng (5.0%/năm), 6 tháng (5.5%/năm)
-- **Khách hàng đăng ký mới:** Nhận thưởng chào mừng 10,000,000 VND vào ví
 
 ---
 
-## 4. Backend API
+## 5. Phân quyền
 
-### 4.1 Authentication
+### 5.1 CUSTOMER
+
+Khách hàng là người dùng cuối. Khách hàng được:
+
+- Xem hồ sơ cá nhân và số tài khoản.
+- Xem số dư ví cá nhân, ví khả dụng, tổng tài sản hiện tại.
+- Xem danh sách sổ tiết kiệm của mình.
+- Tạo yêu cầu mở sổ, gửi thêm, rút tiền và tất toán.
+- Chuyển khoản cho khách hàng khác trong hệ thống.
+- Xem lịch sử giao dịch.
+- Xem biểu đồ tăng trưởng từng sổ và mô phỏng tiết kiệm.
+
+Khách hàng không được:
+
+- Duyệt giao dịch.
+- Truy cập dữ liệu của khách hàng khác.
+- Quản lý sản phẩm, cấu hình hoặc nhân sự.
+
+### 5.2 STAFF
+
+Nhân viên là người vận hành nghiệp vụ. Staff được:
+
+- Xem hàng đợi giao dịch `PENDING`.
+- Duyệt hoặc từ chối yêu cầu của khách hàng.
+- Xem danh sách khách hàng ở mức thông tin định danh, không xem số dư ví.
+- Tra cứu danh sách sổ tiết kiệm ở mức thông tin nghiệp vụ, không xem số dư gốc từng sổ trên UI tra cứu.
+- Xem báo cáo BM5 và thống kê xu hướng.
+
+Staff không được:
+
+- Quản lý tài khoản nhân sự.
+- Sửa sản phẩm tiết kiệm hoặc tham số hệ thống.
+- Xem số dư ví cá nhân của khách hàng.
+
+### 5.3 ADMIN
+
+Admin là người quản trị hệ thống. Admin được:
+
+- Xem dashboard tổng quan.
+- Quản lý người dùng: tạo tài khoản, đổi role, khóa/mở khóa.
+- Quản lý sản phẩm tiết kiệm: thêm, sửa, bật/tắt.
+- Quản lý tham số hệ thống QĐ6.
+- Xem báo cáo BM5.
+
+Admin không được:
+
+- Duyệt giao dịch của khách hàng. Chức năng duyệt chỉ thuộc Staff.
+- Xem số dư ví của khách hàng.
+- Xem số dư gốc từng sổ trong modal chi tiết người dùng.
+
+---
+
+## 6. Backend API chính
+
+### 6.1 Authentication
+
+| Endpoint | Method | Role | Mô tả |
+|---|---|---|---|
+| `/api/auth/register` | POST | Public | Đăng ký khách hàng mới, tạo số tài khoản và thưởng 10,000,000 VND |
+| `/api/auth/login` | POST | Public | Đăng nhập, trả JWT có `user_id`, `role`, `exp` |
+| `/api/auth/forgot-password` | POST | Public | Đặt lại mật khẩu bằng email và CMND/CCCD |
+| `/api/ping` | GET | Public | Smoke test backend |
+
+### 6.2 Client API
 
 | Endpoint | Method | Mô tả |
-|----------|--------|--------|
-| `POST /api/auth/register` | Public | Đăng ký khách hàng mới. Tạo số tài khoản 10 chữ số, thưởng 10M VND |
-| `POST /api/auth/login` | Public | Đăng nhập. Trả JWT (2h expiry) chứa `user_id` và `role`. Kiểm tra LOCKED |
-| `POST /api/auth/forgot-password` | Public | Đặt lại mật khẩu bằng email + CMND. Tối thiểu 6 ký tự |
+|---|---|---|
+| `/api/client/me` | GET | Thông tin cá nhân khách hàng |
+| `/api/client/me` | PATCH | Cập nhật địa chỉ |
+| `/api/client/dashboard` | GET | Tổng quan ví, sổ, lãi dự tính và tổng tài sản hiện tại |
+| `/api/client/savings-products` | GET | Danh sách sản phẩm đang hoạt động |
+| `/api/client/savings-accounts` | GET | Danh sách sổ của khách hàng |
+| `/api/client/savings-accounts/<account_id>` | GET | Chi tiết sổ |
+| `/api/client/savings-accounts/<account_id>/estimate-interest` | GET | Ước tính lãi |
+| `/api/client/open-savings` | POST | Tạo yêu cầu mở sổ |
+| `/api/client/savings-accounts/<account_id>/deposit-requests` | POST | Tạo yêu cầu gửi thêm |
+| `/api/client/savings-accounts/<account_id>/withdraw-requests` | POST | Tạo yêu cầu rút một phần |
+| `/api/client/close-savings/<account_id>` | POST | Tạo yêu cầu tất toán |
+| `/api/client/transfers` | POST | Chuyển khoản nội bộ |
+| `/api/client/transactions` | GET | Lịch sử giao dịch |
 
-**JWT:** Ký HS256, payload `{user_id, role, exp}`, thời hạn 2 giờ.
+### 6.3 Staff API
 
-### 4.2 Admin API (yêu cầu role ADMIN)
+| Endpoint | Method | Role | Mô tả |
+|---|---|---|---|
+| `/api/transactions` | GET | STAFF, ADMIN | Xem danh sách giao dịch |
+| `/api/transactions/<id>/approve` | PUT | STAFF | Duyệt giao dịch |
+| `/api/transactions/<id>/reject` | PUT | STAFF | Từ chối giao dịch |
+| `/api/transactions/<id>` | PATCH | STAFF | Cập nhật trạng thái duyệt |
+| `/api/users` | GET | STAFF, ADMIN | Danh sách khách hàng, không trả số dư ví |
+| `/api/savings-accounts` | GET | STAFF, ADMIN | Danh sách sổ, không trả số dư gốc |
+| `/api/savings-accounts/<id>` | GET | STAFF, ADMIN | Chi tiết sổ, không trả số dư gốc |
+| `/api/balance-system` | GET | STAFF, ADMIN | Tổng tiền gốc tiết kiệm toàn hệ thống |
+| `/api/reports/daily-activity` | GET | STAFF, ADMIN | BM5.1, có thể lấy toàn bộ hoặc lọc theo ngày |
+| `/api/reports/monthly-open-close` | GET | STAFF, ADMIN | BM5.2, có thể lấy toàn bộ hoặc lọc theo tháng |
+| `/api/staff/analytics` | GET | STAFF, ADMIN | Thống kê xu hướng theo tháng |
 
-| Endpoint | Method | Mô tả |
-|----------|--------|--------|
-| `GET /api/admin/dashboard` | GET | Thống kê tổng quan: số khách hàng, nhân viên, sổ tiết kiệm, tiền gửi, giao dịch chờ |
-| `GET /api/admin/users` | GET | Danh sách users (filter theo role, status, search) |
-| `GET /api/admin/users/<id>` | GET | Chi tiết user + danh sách sổ tiết kiệm |
-| `POST /api/admin/users` | POST | Tạo user mới (STAFF/ADMIN/CUSTOMER) |
-| `PUT /api/admin/users/<id>/role` | PUT | Đổi vai trò user (chặn tự đổi role mình) |
-| `PUT /api/admin/users/<id>/status` | PUT | Khóa/mở khóa user (chặn tự khóa mình) |
-| `GET /api/admin/savings-products` | GET | Danh sách tất cả sản phẩm (cả inactive) |
-| `POST /api/admin/savings-products` | POST | Tạo sản phẩm mới |
-| `PATCH /api/admin/savings-products/<id>` | PATCH/PUT | Cập nhật sản phẩm |
-| `PUT /api/admin/savings-products/<id>/toggle` | PUT | Bật/tắt sản phẩm |
-| `GET /api/admin/configs` | GET | Danh sách cấu hình hệ thống |
-| `PATCH /api/admin/configs/<key>` | PATCH/PUT | Cập nhật cấu hình |
-| `POST /api/admin/configs` | POST | Tạo cấu hình mới |
-| `DELETE /api/admin/configs/<key>` | DELETE | Xóa cấu hình |
-
-### 4.3 Staff API (yêu cầu role STAFF hoặc ADMIN)
-
-| Endpoint | Method | Mô tả |
-|----------|--------|--------|
-| `GET /api/transactions` | GET | Danh sách giao dịch (filter theo status, type) |
-| `PUT /api/transactions/<id>/approve` | PUT | Duyệt giao dịch PENDING → thực thi nghiệp vụ |
-| `PUT /api/transactions/<id>/reject` | PUT | Từ chối giao dịch PENDING |
-| `GET /api/savings-accounts` | GET | Tất cả sổ tiết kiệm (BM4), trigger auto-rollover |
-| `GET /api/reports/daily-activity` | GET | Báo cáo hoạt động theo ngày (BM5.1) |
-| `GET /api/reports/monthly-open-close` | GET | Báo cáo mở/đóng theo tháng (BM5.2) |
-| `GET /api/staff/analytics` | GET | Phân tích xu hướng: biểu đồ gửi/rút/mở mới theo ngày |
-
-### 4.4 Client API (yêu cầu role CUSTOMER)
+### 6.4 Admin API
 
 | Endpoint | Method | Mô tả |
-|----------|--------|--------|
-| `GET /api/client/me` | GET | Thông tin cá nhân (kèm wallet_balance) |
-| `PATCH /api/client/me` | PATCH | Cập nhật địa chỉ |
-| `GET /api/client/dashboard` | GET | Dashboard: ví, số dư khả dụng, lãi ước tính, sổ gần đây |
-| `GET /api/client/savings-products` | GET | Danh sách sản phẩm đang hoạt động |
-| `GET /api/client/savings-accounts` | GET | Sổ tiết kiệm của user (kèm auto-rollover) |
-| `GET /api/client/savings-accounts/<id>` | GET | Chi tiết sổ + ước tính lãi |
-| `POST /api/client/open-savings` | POST | Tạo yêu cầu mở sổ (PENDING) |
-| `POST /api/client/savings-accounts/<id>/deposit-requests` | POST | Tạo yêu cầu gửi thêm (PENDING) |
-| `POST /api/client/savings-accounts/<id>/withdraw-requests` | POST | Tạo yêu cầu rút một phần (PENDING, chỉ không kỳ hạn) |
-| `POST /api/client/close-savings/<id>` | POST | Tạo yêu cầu tất toán (PENDING) |
-| `POST /api/client/transfers` | POST | Chuyển khoản (thực thi ngay, không qua duyệt) |
-| `GET /api/client/transactions` | GET | Lịch sử giao dịch cá nhân |
+|---|---|---|
+| `/api/admin/dashboard` | GET | Dashboard tổng quan |
+| `/api/admin/users` | GET | Danh sách người dùng |
+| `/api/admin/users/<id>` | GET | Chi tiết người dùng, không lộ số dư |
+| `/api/admin/users` | POST | Tạo tài khoản |
+| `/api/admin/users/<id>/role` | PUT | Đổi role |
+| `/api/admin/users/<id>/status` | PUT | Khóa/mở khóa tài khoản |
+| `/api/admin/users/<id>` | PATCH | Cập nhật role/status |
+| `/api/admin/savings-products` | GET | Danh sách sản phẩm |
+| `/api/admin/savings-products` | POST | Tạo sản phẩm |
+| `/api/admin/savings-products/<id>` | PATCH/PUT | Cập nhật sản phẩm |
+| `/api/admin/savings-products/<id>/toggle` | PUT | Bật/tắt sản phẩm |
+| `/api/admin/configs` | GET | Danh sách tham số |
+| `/api/admin/configs` | POST | Tạo tham số |
+| `/api/admin/configs/<key>` | PATCH/PUT | Cập nhật tham số |
+| `/api/admin/configs/<key>` | DELETE | Xóa tham số |
 
-### 4.5 Real-time Events (SSE)
+### 6.5 SSE realtime
 
 | Endpoint | Method | Mô tả |
-|----------|--------|--------|
-| `GET /api/events?token=<jwt>` | GET | Kết nối SSE, nhận thông báo real-time |
+|---|---|---|
+| `/api/events?token=<jwt>` | GET | Kết nối Server-Sent Events |
 
-**Đặc điểm:**
-- Pub/sub: `publish_event(event_type, message, roles, user_ids, payload)`
-- Lọc theo role và user_id
-- Keepalive mỗi 25 giây
-- Hàng đợi tối đa 50 sự kiện/subscriber
+SSE dùng để thông báo khi có giao dịch mới, giao dịch được duyệt/từ chối hoặc hàng đợi thay đổi.
 
 ---
 
-## 5. Frontend
+## 7. Frontend theo vai trò
 
-### 5.1 Admin SPA
+### 7.1 Trang Login
 
-**Công nghệ:** React 18 + Vite + React Router v7 + Axios + Chart.js
+Route: `/login`
 
-**Các trang:**
+Chức năng:
 
-| Trang | Route | Chức năng |
-|-------|-------|-----------|
-| Login | `/login` | Đăng nhập/Đăng ký (tab switch), tự redirect theo role |
-| Dashboard | `/admin` | 8 thẻ thống kê (khách hàng, nhân viên, sổ tiết kiệm, tiền gửi, giao dịch chờ, sản phẩm, tài khoản khóa). Auto-refresh qua SSE |
-| User Management | `/admin/users` | Bảng users: filter role/status, search, tạo user mới, modal chi tiết (kèm sổ tiết kiệm), đổi role inline, khóa/mở khóa |
-| Savings Products | `/admin/savings-products` | CRUD sản phẩm: tạo, sửa inline, bật/tắt hoạt động |
-| System Configs | `/admin/configs` | CRUD cấu hình: tạo, sửa, xóa (có xác nhận) |
-| Reports | `/admin/reports` | BM5.1 (hoạt động ngày) + BM5.2 (mở/đóng tháng) song song, filter ngày/tháng. Auto-refresh 12s + SSE |
+- Đăng nhập bằng email và mật khẩu.
+- Đăng ký khách hàng mới.
+- Sau khi đăng nhập, tự chuyển hướng theo role:
+  - `ADMIN` -> `/admin`
+  - `STAFF` -> `/staff/`
+  - `CUSTOMER` -> `/client/`
 
-**Component nổi bật:**
-- `ProtectedRoute`: Kiểm tra JWT hợp lệ + role, redirect khi hết hạn
-- `AdminLayout`: Sidebar 5 mục, kết nối SSE, toast notification
-- Axios interceptor: Tự gắn JWT từ localStorage, redirect login khi nhận 401
+### 7.2 Client SPA
 
-### 5.2 Client SPA (Customer)
+File: `frontend/client/index.html`
 
-**Công nghệ:** HTML/CSS/JS thuần, single-file (~3476 dòng), Chart.js cho biểu đồ
+Các tab chính:
 
-**Các trang (tab navigation):**
+| Tab | Chức năng |
+|---|---|
+| Trang chủ | Tổng tài sản, ví khả dụng, sổ đang mở, giao dịch gần đây |
+| Chuyển khoản | Chuyển tiền qua số tài khoản khách hàng khác |
+| Tiết kiệm của tôi | Xem sổ, sản phẩm, mở sổ, gửi thêm, rút, tất toán |
+| Lịch sử giao dịch | Xem toàn bộ giao dịch của khách hàng |
+| Thông tin cá nhân | Xem hồ sơ, số tài khoản, ví, lãi dự tính |
+| Biểu đồ tăng trưởng | Biểu đồ chi tiết từng sổ, có trục, lãi dự tính, tỷ lệ sinh lời và tiến độ |
+| Mô phỏng tiết kiệm | Mô phỏng vốn, kỳ hạn, lãi suất, số năm và tái tục |
 
-| Trang | Chức năng |
-|-------|-----------|
-| **Home (Dashboard)** | Hiển thị số dư ví, số dư khả dụng, tiền đang chờ duyệt, số sổ hoạt động. Quick actions: chuyển khoản, mở sổ, refresh. Preview 2 sổ gần đây, 4 giao dịch gần đây |
-| **Savings** | Danh sách sản phẩm, form mở sổ (chọn sản phẩm + nhập số tiền), danh sách sổ tiết kiệm kèm nút hành động (gửi thêm, rút, tất toán). Mỗi sổ có biểu đồ tăng trưởng SVG |
-| **Transfer** | Form chuyển khoản: nhập số tài khoản người nhận, số tiền, ghi chú |
-| **Transactions** | Lịch sử giao dịch đầy đủ kèm badge trạng thái (PENDING/APPROVED/REJECTED) |
-| **Profile** | Thông tin cá nhân: tên, email, số tài khoản, CMND, ví, lãi ước tính, tổng giá trị tiết kiệm |
-| **Simulator** | Mô phỏng tiết kiệm với Chart.js: điều chỉnh vốn, kỳ hạn, lãi suất, số năm, tùy chọn rollover. Hiển thị bảng chi tiết từng kỳ và biểu đồ tăng trưởng |
+Điểm nổi bật:
 
-**Tính năng nổi bật:**
-- Real-time SSE với hiệu ứng chuông thông báo
-- Panel thông báo (6 giao dịch gần nhất, badge PENDING)
-- Ẩn/hiện số dư (toggle balance visibility)
-- Bảo vệ XSS qua hàm `escapeHtml()`
-- Kiểm tra JWT hết hạn khi load trang
+- Tổng tài sản hiện tại = ví khả dụng + gốc tiết kiệm + lãi dự tính.
+- Biểu đồ tăng trưởng dùng SVG, tính theo lãi suất/kỳ hạn từ dữ liệu sản phẩm thực tế.
+- Mô phỏng tiết kiệm cho phép chọn sản phẩm đang hoạt động hoặc tự chỉnh tham số.
+- Chống XSS ở dữ liệu render bằng `escapeHtml`.
+- Nhận thông báo realtime qua SSE.
 
-### 5.3 Staff SPA
+### 7.3 Staff SPA
 
-**Công nghệ:** HTML/CSS/JS thuần, single-file (~920 dòng), Chart.js
+File: `frontend/staff/index.html`
 
-**Giao diện:** Neo-brutalist style (viền đen dày, box-shadow, grid background)
+Các tab chính:
 
-**Các trang:**
+| Tab | Chức năng |
+|---|---|
+| Tổng quan | Số giao dịch chờ, khách hàng, sổ, tổng tiền gửi; hiển thị giao dịch mới |
+| Duyệt giao dịch | Duyệt/từ chối giao dịch PENDING, lọc theo trạng thái và loại |
+| Khách hàng | Tra cứu thông tin định danh, không hiển thị số dư ví |
+| Sổ tiết kiệm | Tra cứu sổ, không hiển thị số dư gốc từng sổ |
+| Báo cáo BM5 | BM5.1 và BM5.2, tự load toàn bộ, có filter ngày/tháng |
+| Thống kê xu hướng | Biểu đồ tiền gửi, tiền rút, sổ mới và khách hàng mới theo ngày |
 
-| Trang | Chức năng |
-|-------|-----------|
-| **Dashboard** | 4 thẻ tổng quan (giao dịch chờ, khách hàng, sổ tiết kiệm, tổng tiền gửi). Bảng 8 giao dịch PENDING mới nhất kèm nút duyệt/từ chối |
-| **Transactions** | Danh sách đầy đủ, filter theo status và type. Duyệt/từ chối có modal xác nhận |
-| **Customers** | Bảng khách hàng: ID, tên, email, CMND, địa chỉ, trạng thái, ngày tạo |
-| **Accounts (BM4)** | Tất cả sổ tiết kiệm kèm ngày đáo hạn và thời gian đã gửi |
-| **Reports (BM5)** | BM5.1 + BM5.2 song song, filter ngày. Auto-poll mỗi 12s |
-| **Analytics** | Dashboard xu hướng với Chart.js. Chọn tháng, 4 thẻ tổng (tổng gửi, rút, dòng ròng, sổ mới). 4 biểu đồ: gửi theo ngày, rút theo ngày, sổ mới theo ngày, tăng trưởng khách hàng theo ngày |
+Giao diện Staff dùng phong cách neo-brutalist với viền đen, shadow rõ, bảng dữ liệu dày và dễ thao tác.
 
----
+### 7.4 Admin SPA
 
-## 6. Business Logic & Quy tắc nghiệp vụ
+File chính: `frontend/src/App.jsx`, `frontend/src/layouts/AdminLayout.jsx`
 
-### 6.1 Quy tắc hệ thống
+Các trang:
 
-| Mã | Quy tắc | Giá trị mặc định | Mô tả |
-|----|---------|-----------------|--------|
-| QD1 | `MIN_OPEN_AMOUNT` | 1,000,000 VND | Số tiền tối thiểu để mở sổ tiết kiệm |
-| QD2 | `MIN_SAVINGS_DEPOSIT_AMOUNT` | 100,000 VND | Số tiền tối thiểu cho mỗi lần gửi thêm |
-| QD3 | `NON_TERM_MIN_DAYS` | 15 ngày | Số ngày giữ tối thiểu cho sổ không kỳ hạn |
+| Route | Chức năng |
+|---|---|
+| `/admin` | Dashboard tổng quan |
+| `/admin/users` | Quản lý người dùng, role, khóa/mở khóa |
+| `/admin/savings-products` | Quản lý sản phẩm tiết kiệm |
+| `/admin/configs` | Quản lý tham số QĐ6 |
+| `/admin/reports` | Báo cáo BM5, tự load và polling |
 
-### 6.2 Công thức tính lãi
-
-```
-Tiền lãi = Số dư gốc × Lãi suất năm (%) / 100 × (Số ngày giữ / 365)
-```
-
-- Sử dụng ngày thực tế (365 ngày = 1 năm)
-- 1 tháng = 30 ngày cho tính toán kỳ hạn
-
-### 6.3 Quy tắc rút trước hạn
-
-| Loại sổ | Điều kiện | Lãi suất áp dụng |
-|---------|-----------|-----------------|
-| Có kỳ hạn | Rút trước ngày đáo hạn | Lãi suất không kỳ hạn (0.5%/năm) |
-| Có kỳ hạn | Rút đúng/sau ngày đáo hạn | Lãi suất sản phẩm (5.0% hoặc 5.5%) |
-| Không kỳ hạn | Luôn luôn | Lãi suất sản phẩm (0.5%/năm) |
-
-### 6.4 Quy tắc gửi thêm (QD2)
-
-- **Sổ có kỳ hạn:** Chỉ được gửi thêm tại **ranh giới kỳ hạn** (khi `số ngày giữ >= số ngày kỳ hạn`)
-- **Sổ không kỳ hạn:** Được gửi thêm bất cứ lúc nào
-
-### 6.5 Quy tắc rút tiền
-
-- **Sổ có kỳ hạn:** Phải tất toán toàn bộ (`CLOSE_SAVINGS`), không rút một phần
-- **Sổ không kỳ hạn:** Được rút một phần, phải giữ tối thiểu `NON_TERM_MIN_DAYS` ngày
-
-### 6.6 Auto-Rollover (Tự động tái tục)
-
-- **Lazy evaluation:** Trigger khi xem chi tiết sổ hoặc danh sách sổ
-- Khi sổ có kỳ hạn đáo hạn: lãi được cộng dồn vào gốc, `opened_at` reset về ngày tái tục
-- Xử lý nhiều kỳ liên tiếp trong một lần kiểm tra (loop với giới hạn 100 vòng)
-- Ghi nhận giao dịch `AUTO_ROLLOVER` với tổng lãi
-
-### 6.7 Quy trình Maker/Checker (Duyệt giao dịch)
-
-```
-CUSTOMER tạo yêu cầu → Transaction PENDING
-         │
-         ▼
-STAFF xem hàng đợi → Approve hoặc Reject
-         │
-    ┌────┴────┐
-    │         │
-APPROVED   REJECTED
-    │
-    ▼
-Thực thi nghiệp vụ → Publish SSE events
-    │
-    ▼
-CUSTOMER nhận thông báo real-time
-```
-
-**Ngoại lệ:**
-- Chuyển khoản (`TRANSFER_OUT`/`TRANSFER_IN`): Thực thi ngay, không qua duyệt
-- Nạp/rút ví: Đã tắt trong demo (trả về 410), thay bằng thưởng chào mừng
-
-### 6.8 Số dư khả dụng (Available Balance)
-
-```
-Số dư khả dụng = wallet_balance - Σ(PENDING OPEN_SAVINGS + PENDING DEPOSIT_TO_SAVINGS)
-```
-
-Hệ thống trừ số tiền đang chờ duyệt khỏi số dư hiển thị, ngăn khách hàng chi tiêu kép (double-spending) số tiền đã cam kết cho yêu cầu đang chờ.
-
-### 6.9 Phân quyền chi tiết
-
-| Tính năng | CUSTOMER | STAFF | ADMIN |
-|-----------|----------|-------|-------|
-| Xem thông tin cá nhân | ✅ (của mình) | ❌ | ❌ |
-| Xem wallet_balance | ✅ | ❌ | ❌ |
-| Mở/Gửi/Rút/Tất toán sổ | ✅ (tạo request) | ✅ (duyệt) | ✅ (duyệt) |
-| Chuyển khoản | ✅ (ngay lập tức) | ❌ | ❌ |
-| Duyệt giao dịch | ❌ | ✅ | ✅ |
-| Xem báo cáo BM5 | ❌ | ✅ | ✅ |
-| Xem Analytics | ❌ | ✅ | ✅ |
-| Quản lý users | ❌ | ❌ | ✅ |
-| Quản lý sản phẩm | ❌ | ❌ | ✅ |
-| Quản lý cấu hình | ❌ | ❌ | ✅ |
-| Dashboard tổng quan | ❌ | ❌ | ✅ |
+Admin không có trang duyệt giao dịch. Chức năng duyệt thuộc Staff.
 
 ---
 
-## 7. Test Cases
+## 8. Quy tắc nghiệp vụ
 
-### 7.1 Integration Test (`test_flow.py`)
+Phần này mô tả cách hệ thống xử lý tiền. Trong các ví dụ bên dưới, giả sử khách hàng mới có ví ban đầu `10,000,000 VND`.
 
-Luồng end-to-end tuyến tính:
+### 8.1 Mở sổ
 
-| Step | Hành động | Kiểm tra |
-|------|-----------|----------|
-| 1 | Đăng ký khách hàng mới | Thành công |
-| 2 | Đăng nhập | Nhận JWT |
-| 3 | Kiểm tra ví | Số dư = 10,000,000 VND (welcome bonus) |
-| 4 | Xem sản phẩm tiết kiệm | Tìm sản phẩm có kỳ hạn |
-| 5 | Mở sổ tiết kiệm (2M) | Tạo giao dịch PENDING |
-| 6 | Staff duyệt giao dịch | Status → APPROVED |
-| 7 | Kiểm tra ví | Số dư = 8,000,000 VND |
-| 8 | Ước tính lãi | Hiển thị lãi rút trước hạn |
-| 9 | Tất toán sổ, Staff duyệt | Sổ CLOSED |
-| 10 | Kiểm tra ví | Số dư = 8M + gốc 2M + lãi |
+- Khách hàng chọn sản phẩm và nhập số tiền.
+- Số tiền phải >= `MIN_OPEN_AMOUNT`.
+- Hệ thống tạo giao dịch `OPEN_SAVINGS` với trạng thái `PENDING`.
+- Staff duyệt thì hệ thống trừ ví và tạo bản ghi `savings_accounts`.
 
-### 7.2 Comprehensive API Tests (`run_api_tests.py`)
+Ví dụ:
 
-#### Phase 1: Authentication & RBAC
-| Test Case | Mô tả | Kết quả mong đợi |
-|-----------|--------|-----------------|
-| Đăng ký + Đăng nhập | Flow auth cơ bản | JWT trả về hợp lệ |
-| Customer → Admin endpoint | Truy cập `/api/admin/dashboard` | 403 Forbidden |
-| Customer → Staff endpoint | Truy cập `/api/transactions` | 403 Forbidden |
-| Staff → Admin endpoint | Truy cập `/api/admin/users` | 403 Forbidden |
+```text
+Ví khách hàng ban đầu:        10,000,000 VND
+Khách hàng mở sổ:              2,000,000 VND
+Trạng thái ban đầu:            PENDING
 
-#### Phase 2: Chuyển khoản
-| Test Case | Mô tả | Kết quả mong đợi |
-|-----------|--------|-----------------|
-| Chuyển khoản thường | Chuyển hợp lệ | Thành công, ví trừ đúng |
-| Tự chuyển khoản | Chuyển cho chính mình | 400 Bad Request |
-| Số tiền âm | amount < 0 | 400 Bad Request |
-| Số tiền = 0 | amount = 0 | 400 Bad Request |
-| Vượt số dư | amount > wallet_balance | 400 Bad Request |
+Sau khi Staff duyệt:
+Ví còn lại:                    8,000,000 VND
+Gốc sổ tiết kiệm mới:          2,000,000 VND
+```
 
-#### Phase 5: Quy tắc nghiệp vụ
-| Test Case | Mô tả | Kết quả mong đợi |
-|-----------|--------|-----------------|
-| QD1: Số tiền < MIN_OPEN_AMOUNT | Mở sổ với 500,000 VND | 400 Bad Request |
-| QD2: Gửi thêm sổ có kỳ hạn | Gửi khi chưa đến ranh giới kỳ hạn | 400 Bad Request |
-| QD3: Rút một phần sổ có kỳ hạn | Withdraw từ sổ có kỳ hạn | 400 Bad Request |
-| Rút trước hạn | Tất toán sổ không kỳ hạn < 15 ngày | 400 Bad Request |
-| Tất toán sớm + phạt lãi | Close sổ có kỳ hạn trước đáo hạn | Áp dụng lãi suất không kỳ hạn |
+Nếu Staff từ chối, ví không bị trừ và sổ không được tạo.
 
-#### Phase 7: Race Condition
-| Test Case | Mô tả | Kết quả mong đợi |
-|-----------|--------|-----------------|
-| Double transfer đồng thời | 2 thread chuyển khoản cùng lúc | Chỉ 1 giao dịch thành công |
+### 8.2 Gửi thêm
 
-### 7.3 Playwright E2E Test (`frontend/tests/role-flow.spec.js`)
+- Số tiền phải >= `MIN_SAVINGS_DEPOSIT_AMOUNT`.
+- Với sổ có kỳ hạn, chỉ cho gửi thêm khi đã đến kỳ hạn tính lãi.
+- Giao dịch được tạo ở trạng thái `PENDING`.
+- Staff duyệt thì hệ thống trừ ví và cộng vào gốc sổ.
 
-Single test case (timeout 90s):
+Ví dụ:
 
-| Step | Hành động | Kiểm tra |
-|------|-----------|----------|
-| 1 | Đăng ký khách hàng qua UI | Redirect thành công |
-| 2 | Login customer | Redirect tới `/client/` |
-| 3 | Mở sổ tiết kiệm | Transaction PENDING xuất hiện |
-| 4 | Logout, login staff | Redirect tới `/staff/` |
-| 5 | Duyệt giao dịch PENDING | Status thay đổi |
-| 6 | Logout, login customer | Sổ hiện trong danh sách |
-| 7 | Logout, login admin | Dashboard hiện, navigate được |
-| 8 | Assert | Không có JS error, không có network request lỗi |
+```text
+Ví hiện tại:                   8,000,000 VND
+Gốc sổ hiện tại:               2,000,000 VND
+Khách hàng gửi thêm:             500,000 VND
 
-### 7.4 Các trường hợp CHƯA được test
+Sau khi Staff duyệt:
+Ví còn lại:                    7,500,000 VND
+Gốc sổ mới:                    2,500,000 VND
+```
 
-| Nhóm | Chi tiết |
-|------|----------|
-| Unit tests | Hàm tính lãi, auto-rollover, kiểm tra đáo hạn trong `savings_rules.py` |
-| SSE | Real-time events, keepalive, reconnect |
-| Auth | Forgot-password flow |
-| Admin | CRUD user, đổi role, khóa/mở khóa, CRUD sản phẩm, CRUD cấu hình |
-| Báo cáo | BM5 với filter ngày/tháng, analytics endpoint |
-| Frontend | Simulator, profile update, JWT hết hạn trên UI |
-| Logic | Available balance reservation, auto-rollover behavior |
+Lưu ý: tiền gửi thêm chưa được cộng ngay khi khách hàng bấm yêu cầu. Tiền chỉ thay đổi sau khi Staff duyệt.
+
+### 8.3 Rút tiền
+
+- Sổ không kỳ hạn có thể rút một phần.
+- Sổ có kỳ hạn không rút một phần, phải tất toán toàn bộ.
+- Sổ không kỳ hạn phải giữ tối thiểu `NON_TERM_MIN_DAYS`.
+- Lãi được tính và cộng về ví khi Staff duyệt.
+
+Ví dụ với sổ không kỳ hạn:
+
+```text
+Gốc sổ không kỳ hạn:           2,000,000 VND
+Lãi suất không kỳ hạn:                 0.5%/năm
+Thời gian đã gửi:                     20 ngày
+Khách hàng rút:                 500,000 VND
+```
+
+Cách tính lãi cho phần tiền rút:
+
+```text
+Tiền lãi = 500,000 × 0.5 / 100 × 20 / 365
+         ≈ 136.99 VND
+```
+
+Sau khi Staff duyệt:
+
+```text
+Tiền cộng về ví:                 500,136.99 VND
+Gốc còn lại trong sổ:          1,500,000 VND
+```
+
+Nếu sổ không kỳ hạn chưa gửi đủ số ngày tối thiểu, hệ thống không cho tạo yêu cầu rút.
+
+### 8.4 Tất toán
+
+- Khách hàng tạo yêu cầu tất toán.
+- Nếu tất toán trước hạn với sổ có kỳ hạn, hệ thống áp dụng lãi suất không kỳ hạn.
+- Staff duyệt thì sổ chuyển `CLOSED`, gốc và lãi được cộng về ví.
+
+Ví dụ 1: tất toán đúng hạn.
+
+```text
+Gốc sổ:                       2,000,000 VND
+Kỳ hạn:                              3 tháng
+Lãi suất sản phẩm:                    4.5%/năm
+Thời gian đủ hạn:                    90 ngày
+```
+
+Cách tính:
+
+```text
+Tiền lãi = 2,000,000 × 4.5 / 100 × 90 / 365
+         ≈ 22,191.78 VND
+
+Tổng tiền nhận về ví = 2,000,000 + 22,191.78
+                     ≈ 2,022,191.78 VND
+```
+
+Ví dụ 2: tất toán trước hạn.
+
+```text
+Gốc sổ:                       2,000,000 VND
+Kỳ hạn gốc:                          3 tháng
+Lãi suất sản phẩm:                    4.5%/năm
+Khách hàng tất toán sau:             30 ngày
+Lãi suất áp dụng:                     0.5%/năm
+```
+
+Vì khách hàng rút trước hạn, hệ thống không dùng lãi suất `4.5%/năm`, mà dùng lãi suất không kỳ hạn:
+
+```text
+Tiền lãi = 2,000,000 × 0.5 / 100 × 30 / 365
+         ≈ 821.92 VND
+
+Tổng tiền nhận về ví = 2,000,000 + 821.92
+                     ≈ 2,000,821.92 VND
+```
+
+### 8.5 Chuyển khoản
+
+- Khách hàng nhập số tài khoản nhận và số tiền.
+- Giao dịch chuyển khoản thực thi ngay, không qua Staff.
+- Hệ thống tạo 2 giao dịch: `TRANSFER_OUT` cho người gửi và `TRANSFER_IN` cho người nhận.
+
+Ví dụ:
+
+```text
+Ví người gửi trước chuyển:     8,000,000 VND
+Ví người nhận trước chuyển:    1,000,000 VND
+Số tiền chuyển:                  500,000 VND
+
+Sau chuyển khoản:
+Ví người gửi:                  7,500,000 VND
+Ví người nhận:                 1,500,000 VND
+```
+
+Khác với mở sổ/gửi thêm/rút/tất toán, chuyển khoản không cần Staff duyệt.
+
+### 8.6 Auto-rollover
+
+- Với sổ có kỳ hạn, khi đến hạn hệ thống có thể tự tái tục khi người dùng/staff truy vấn.
+- Lãi được cộng vào gốc.
+- `opened_at` được cập nhật sang kỳ mới.
+- Ghi nhận giao dịch `AUTO_ROLLOVER`.
+
+Ví dụ:
+
+```text
+Gốc ban đầu:                   2,000,000 VND
+Kỳ hạn:                              3 tháng
+Lãi suất:                             4.5%/năm
+Một kỳ được tính là:                  90 ngày
+```
+
+Sau khi đủ 1 kỳ:
+
+```text
+Lãi kỳ 1 = 2,000,000 × 4.5 / 100 × 90 / 365
+         ≈ 22,191.78 VND
+
+Gốc mới sau tái tục = 2,000,000 + 22,191.78
+                    ≈ 2,022,191.78 VND
+```
+
+Nếu tiếp tục đủ thêm 1 kỳ nữa, hệ thống tính lãi trên gốc mới `2,022,191.78 VND`, không phải gốc cũ `2,000,000 VND`. Đây là cơ chế lãi nhập gốc.
+
+### 8.7 Tính lãi
+
+Hệ thống dùng các hàm trong `backend/common/savings_rules.py`.
+
+Công thức tổng quát:
+
+```text
+Tiền lãi = Gốc × Lãi suất năm / 100 × Thời gian quy đổi theo năm
+```
+
+Trong code hiện tại, thời gian được tính theo ngày thực tế:
+
+```text
+Thời gian quy đổi theo năm = Số ngày gửi / 365
+```
+
+Vì vậy công thức có thể viết rõ hơn là:
+
+```text
+Tiền lãi = Gốc × Lãi suất năm / 100 × Số ngày gửi / 365
+```
+
+Ví dụ tổng quát:
+
+```text
+Gốc:                           1,000,000 VND
+Lãi suất:                              6%/năm
+Số ngày gửi:                         180 ngày
+
+Tiền lãi = 1,000,000 × 6 / 100 × 180 / 365
+         ≈ 29,589.04 VND
+```
+
+Các điểm cần nhớ:
+
+- Lãi suất trong database là lãi suất theo năm.
+- Kỳ hạn 1 tháng được quy đổi gần đúng là 30 ngày khi kiểm tra đủ hạn.
+- Nếu sổ có kỳ hạn bị tất toán trước hạn, hệ thống dùng lãi suất không kỳ hạn.
+- Với sổ không kỳ hạn, hệ thống luôn dùng lãi suất không kỳ hạn.
+- Với auto-rollover, lãi được cộng vào gốc rồi mới bắt đầu kỳ tiếp theo.
 
 ---
 
-## 8. Đánh giá & Hạn chế
+## 9. Bảo mật và kiểm soát quyền
 
-### 8.1 Điểm mạnh
+Các điểm bảo mật chính:
 
-| Điểm | Chi tiết |
-|------|----------|
-| **Kiến trúc rõ ràng** | Tách biệt 3 blueprint (admin/staff/client), common layer dùng chung |
-| **Maker/Checker pattern** | Quy trình duyệt giao dịch 2 bước, đảm bảo an toàn |
-| **Real-time** | SSE cho thông báo tức thì, auto-refresh dashboard |
-| **Config-driven** | Business rules lưu trong DB, admin thay đổi được qua API |
-| **Auto-migration** | Tự động thêm cột thiếu khi khởi động, không cần migration script |
-| **Security** | JWT auth, parameterized SQL, XSS protection (escapeHtml), wallet_balance không lộ cho staff/admin |
-| **UX** | 3 giao diện riêng biệt phù hợp từng vai trò, simulator tiết kiệm hữu ích |
-
-### 8.2 Hạn chế & Đề xuất cải thiện
-
-| Vấn đề | Chi tiết | Đề xuất |
-|--------|----------|---------|
-| **Single-threaded Flask** | Dev server đơn luồng, race condition test không chính xác | Dùng Gunicorn/uWSGI cho production |
-| **Client/Staff SPA đơn file** | ~3476 và ~920 dòng HTML inline, khó maintain | Tách thành component, dùng bundler |
-| **Không có unit test** | Chỉ có integration/E2E, thiếu unit test cho business logic | Thêm pytest cho `savings_rules.py`, `auth.py` |
-| **DB connection per request** | Client module tạo connection riêng mỗi request | Dùng connection pool hoặc shared proxy như các module khác |
-| **JWT hardcoded secret** | `SECRET_KEY` mặc định là chuỗi tiếng Việt hardcode | Bắt buộc env var, refuse start nếu thiếu |
-| **Không có pagination** | API trả toàn bộ data, không phân trang | Thêm `limit`/`offset` cho list endpoints |
-| **Không có rate limiting** | Không giới hạn request | Thêm Flask-Limiter |
-| **Auto-rollover lazy** | Chỉ trigger khi có người xem, không có background job | Thêm cron job hoặc scheduler |
+- Mật khẩu được hash bằng `pbkdf2:sha256`.
+- JWT có thời hạn 2 giờ.
+- Backend kiểm tra role bằng decorator `@require_role`.
+- SQL dùng parameterized query với `%s`, hạn chế SQL injection.
+- Client/Staff render dữ liệu qua hàm escape HTML để giảm rủi ro XSS.
+- Staff/Admin không được xem `wallet_balance` của khách hàng.
+- Staff/Admin không xem số dư gốc từng sổ trong các màn tra cứu cá nhân.
+- Admin không có quyền duyệt giao dịch; API duyệt trả `403` với role Admin.
 
 ---
 
-*Report generated: 2026-05-31*
+## 10. Hướng dẫn cài đặt và chạy
+
+### 10.1 Cài backend
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 10.2 Khởi tạo database
+
+```bash
+mysql -u root -p < smart_savings.sql
+```
+
+Backend mặc định dùng:
+
+```text
+DB_HOST=localhost
+DB_USER=smart_savings
+DB_PASSWORD=SmartSavings@2026!
+DB_NAME=modern_savings_db
+```
+
+Có thể override qua biến môi trường.
+
+### 10.3 Chạy backend
+
+```bash
+cd backend
+python app.py
+```
+
+Backend chạy tại:
+
+```text
+http://localhost:5000
+```
+
+Smoke test:
+
+```bash
+curl http://localhost:5000/api/ping
+```
+
+### 10.4 Chạy frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend chạy tại:
+
+```text
+http://localhost:5173
+```
+
+Các đường dẫn:
+
+- Login: `http://localhost:5173/login`
+- Client: `http://localhost:5173/client/`
+- Staff: `http://localhost:5173/staff/`
+- Admin: `http://localhost:5173/admin`
+
+### 10.5 Tài khoản mặc định
+
+Các tài khoản này được tạo/cập nhật tự động khi backend khởi động:
+
+| Role | Email | Password |
+|---|---|---|
+| ADMIN | `admin@gmail.com` | `admin123` |
+| STAFF | `staff@gmail.com` | `staff123` |
+
+Khách hàng có thể đăng ký trực tiếp ở trang Login. Khách hàng mới được thưởng 10,000,000 VND để demo.
+
+### 10.6 Dữ liệu mock tùy chọn
+
+Repo có `seed_mock_data.py` và `seed_mock_data.sql` để tạo dữ liệu lịch sử phục vụ biểu đồ/thống kê. Chỉ chạy khi database và product/user ID phù hợp với dữ liệu seed.
+
+---
+
+## 11. Hướng dẫn sử dụng theo vai trò
+
+### 11.1 Khách hàng
+
+1. Vào `/login`, chọn đăng ký khách hàng.
+2. Đăng nhập bằng tài khoản vừa tạo.
+3. Ở Trang chủ, xem ví khả dụng, tổng tài sản và giao dịch gần đây.
+4. Vào “Tiết kiệm của tôi”.
+5. Chọn sản phẩm tiết kiệm và nhập số tiền mở sổ.
+6. Bấm “Mở sổ tiết kiệm”.
+7. Chờ Staff duyệt.
+8. Sau khi duyệt, sổ xuất hiện trong danh sách.
+9. Có thể gửi thêm, rút một phần với sổ không kỳ hạn, hoặc tất toán.
+10. Vào “Biểu đồ tăng trưởng” để xem trực quan từng sổ.
+11. Vào “Mô phỏng tiết kiệm” để thử các kịch bản vốn/kỳ hạn/lãi suất/tái tục.
+
+### 11.2 Nhân viên
+
+1. Đăng nhập bằng tài khoản Staff.
+2. Vào `/staff/`.
+3. Màn Tổng quan hiển thị giao dịch đang chờ.
+4. Vào “Duyệt giao dịch”.
+5. Chọn giao dịch và bấm Duyệt hoặc Từ chối.
+6. Kiểm tra lại báo cáo BM5 hoặc thống kê xu hướng.
+7. Có thể tra cứu khách hàng và sổ tiết kiệm, nhưng không xem số dư ví hoặc số dư gốc từng sổ.
+
+### 11.3 Quản trị viên
+
+1. Đăng nhập bằng tài khoản Admin.
+2. Vào dashboard `/admin`.
+3. Quản lý tài khoản ở “Nhân sự”.
+4. Thêm/sửa/bật/tắt sản phẩm ở “Gói tiết kiệm”.
+5. Cập nhật quy định nghiệp vụ ở “Tham số”.
+6. Xem báo cáo BM5 ở “Báo cáo BM5”.
+7. Admin không duyệt giao dịch; việc duyệt thuộc Staff.
+
+---
+
+## 12. Kiểm thử
+
+### 12.1 Python integration test
+
+File: `test_flow.py`
+
+Luồng kiểm thử:
+
+1. Đăng ký khách hàng.
+2. Đăng nhập khách hàng.
+3. Kiểm tra welcome bonus 10,000,000 VND.
+4. Tạo tài khoản Staff test.
+5. Mở sổ tiết kiệm.
+6. Staff duyệt giao dịch mở sổ.
+7. Kiểm tra ví bị trừ đúng.
+8. Ước tính lãi.
+9. Tất toán sổ.
+10. Staff duyệt tất toán.
+11. Kiểm tra ví nhận lại gốc và lãi.
+
+Chạy:
+
+```bash
+python test_flow.py
+```
+
+### 12.2 Playwright E2E
+
+File: `frontend/tests/role-flow.spec.js`
+
+Luồng kiểm thử:
+
+1. Đăng ký khách hàng qua UI.
+2. Login khách hàng.
+3. Mở sổ tiết kiệm và thấy giao dịch `PENDING`.
+4. Login Staff.
+5. Staff duyệt giao dịch.
+6. Login lại khách hàng và thấy sổ mới.
+7. Login Admin và kiểm tra Admin không có menu duyệt giao dịch.
+8. Kiểm tra không có JS error và request lỗi.
+
+Chạy:
+
+```bash
+cd frontend
+npx playwright test tests/role-flow.spec.js --reporter=line
+```
+
+### 12.3 Build frontend
+
+```bash
+cd frontend
+npm run build
+```
+
+### 12.4 Compile backend
+
+```bash
+python -m py_compile backend/app.py backend/common/auth.py backend/common/db.py backend/common/events.py backend/common/requireRole.py backend/common/savings_rules.py backend/client/client.py backend/staff/staff.py backend/admin/admin.py
+```
+
+---
+
+## 13. Đánh giá
+
+### 13.1 Điểm đạt được
+
+- Đáp ứng mô hình 3 role: Customer, Staff, Admin.
+- Có quy trình Maker-Checker rõ ràng.
+- Có database MySQL đầy đủ bảng người dùng, sản phẩm, sổ, giao dịch, cấu hình.
+- Có tham số QĐ6 để Admin thay đổi quy định nghiệp vụ.
+- Có tính lãi, rút trước hạn, giữ tối thiểu, auto-rollover.
+- Có báo cáo BM5.1 và BM5.2.
+- Có thống kê xu hướng bằng biểu đồ.
+- Có realtime notification bằng SSE.
+- Có test integration và E2E browser.
+
+### 13.2 Hạn chế
+
+- Client và Staff là single-file HTML lớn, khó bảo trì nếu phát triển lâu dài.
+- Backend chưa có migration framework chính thức như Alembic.
+- Chưa có unit test riêng cho từng hàm tính lãi/auto-rollover.
+- JWT secret có giá trị mặc định trong code, khi triển khai thật cần bắt buộc dùng biến môi trường.
+- Chưa có pagination cho các danh sách lớn.
+- Chưa có rate limiting cho login/API.
+- Auto-rollover đang xử lý lazy khi truy vấn, chưa có background scheduler.
+
+### 13.3 Hướng phát triển
+
+- Tách Client/Staff sang React component hoặc framework frontend thống nhất.
+- Thêm unit test cho `savings_rules.py`.
+- Thêm phân trang, tìm kiếm nâng cao và export báo cáo.
+- Bổ sung logging/audit trail cho hành động duyệt giao dịch.
+- Bổ sung AI advisor để gợi ý thời điểm gửi/rút tối ưu theo sản phẩm và mục tiêu tiết kiệm.
+- Triển khai production với Gunicorn/uWSGI, reverse proxy và secret qua environment.
+
+---
+
+## 14. Kết luận
+
+Smart Savings mô phỏng đầy đủ các chức năng cốt lõi của hệ thống quản lý sổ tiết kiệm: quản lý người dùng, sản phẩm tiết kiệm, mở/gửi/rút/tất toán sổ, duyệt giao dịch theo Maker-Checker, báo cáo và phân quyền dữ liệu. Hệ thống có thể dùng để demo quy trình nghiệp vụ ngân hàng trong phạm vi môn Nhập môn Công nghệ Phần mềm, đồng thời có nền tảng để mở rộng thêm các chức năng nâng cao như tư vấn tiết kiệm và phân tích tài chính cá nhân.

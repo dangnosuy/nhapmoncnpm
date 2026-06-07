@@ -122,15 +122,59 @@
       background: rgba(17, 24, 39, 0.58);
     }
     .modal {
-      width: min(520px, 100%);
+      width: min(760px, 100%);
       background: #fff;
       border: 3px solid var(--line);
       box-shadow: var(--shadow);
       padding: 24px;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
     }
     .modal h2 { margin: 0 0 8px; font-size: 36px; line-height: .95; }
     .modal p { margin: 0 0 18px; color: var(--muted); font-weight: 800; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+    .business-form {
+      border: 3px solid var(--line);
+      background: #fffaf0;
+      margin: 14px 0 18px;
+    }
+    .business-form-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      padding: 12px 14px;
+      border-bottom: 3px solid var(--line);
+      background: #fef3c7;
+    }
+    .business-form-head strong { font-size: 28px; line-height: 1; font-weight: 900; }
+    .business-form-head span { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 900; }
+    .business-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .business-field {
+      min-height: 72px;
+      padding: 10px 14px;
+      border-right: 2px solid var(--line);
+      border-bottom: 2px solid var(--line);
+    }
+    .business-field:nth-child(2n) { border-right: 0; }
+    .business-field label {
+      margin: 0 0 5px;
+      color: #6b7280;
+    }
+    .business-field div { font-weight: 900; font-size: 22px; line-height: 1.05; word-break: break-word; }
+    .business-note {
+      padding: 10px 14px;
+      font-weight: 800;
+      color: var(--muted);
+      background: #fff;
+    }
+    @media (max-width: 680px) {
+      .business-grid { grid-template-columns: 1fr; }
+      .business-field { border-right: 0; }
+    }
 
     .shell { min-height: 100vh; display: grid; grid-template-columns: 260px minmax(0, 1fr); }
     aside { background: #0b1220; color: #fff; padding: 22px 16px; border-right: 4px solid var(--line); }
@@ -363,6 +407,7 @@
     <div class="modal">
       <h2>Xác nhận giao dịch</h2>
       <p id="confirmModalText"></p>
+      <div id="businessFormBody"></div>
       <div class="modal-actions">
         <button id="cancelConfirmBtn" class="ghost" type="button">Hủy</button>
         <button id="submitConfirmBtn" class="primary" type="button">Xác nhận</button>
@@ -478,6 +523,7 @@
       staffNotifyBtn: document.getElementById("staffNotifyBtn"),
       confirmModal: document.getElementById("confirmModal"),
       confirmModalText: document.getElementById("confirmModalText"),
+      businessFormBody: document.getElementById("businessFormBody"),
       cancelConfirmBtn: document.getElementById("cancelConfirmBtn"),
       submitConfirmBtn: document.getElementById("submitConfirmBtn")
     };
@@ -497,6 +543,92 @@
 
     function productDisplayName(name) {
       return String(name || "").replaceAll("phút", "tháng");
+    }
+
+    function transactionFormMeta(type) {
+      if (type === "OPEN_SAVINGS") return { code: "BM1", title: "Sổ Tiết Kiệm" };
+      if (type === "DEPOSIT_TO_SAVINGS") return { code: "BM2", title: "Phiếu Gởi Tiền" };
+      if (type === "WITHDRAW_FROM_SAVINGS" || type === "CLOSE_SAVINGS") return { code: "BM3", title: "Phiếu Rút Tiền" };
+      return { code: "PHIẾU", title: "Chi tiết giao dịch" };
+    }
+
+    function businessField(label, value) {
+      return `
+        <div class="business-field">
+          <label>${escapeHtml(label)}</label>
+          <div>${escapeHtml(value || "-")}</div>
+        </div>
+      `;
+    }
+
+    function renderBusinessForm(tx) {
+      if (!tx) return "";
+      const meta = transactionFormMeta(tx.transaction_type);
+      const productName = productDisplayName(tx.product_name || tx.target_product_name || "-");
+      let fields = [];
+      let note = "Phiếu được lập từ yêu cầu của khách hàng và chờ Staff kiểm tra trước khi duyệt.";
+
+      if (tx.transaction_type === "OPEN_SAVINGS") {
+        fields = [
+          ["Mã số", tx.transaction_id ? `#${tx.transaction_id}` : "-"],
+          ["Loại tiết kiệm", productName],
+          ["Khách hàng", tx.customer_name],
+          ["CMND/CCCD", tx.identity_card],
+          ["Địa chỉ", tx.address],
+          ["Ngày mở sổ", tx.transaction_date || tx.created_at],
+          ["Số tiền gởi", money(tx.amount)],
+          ["Trạng thái", tx.status],
+        ];
+        note = "BM1 được duyệt sẽ trừ tiền từ ví khách hàng và tạo sổ tiết kiệm mới.";
+      } else if (tx.transaction_type === "DEPOSIT_TO_SAVINGS") {
+        fields = [
+          ["Mã số", tx.account_id ? `Sổ #${tx.account_id}` : "-"],
+          ["Khách hàng", tx.customer_name],
+          ["Ngày gởi", tx.transaction_date || tx.created_at],
+          ["Số tiền gởi", money(tx.amount)],
+          ["Loại tiết kiệm", productName],
+          ["Kỳ hạn", termLabel(tx.term_months)],
+          ["Lãi suất", `${tx.interest_rate || 0}%/năm`],
+          ["Trạng thái", tx.status],
+        ];
+        note = "BM2 được duyệt sẽ trừ tiền từ ví và cộng vào gốc sổ tiết kiệm.";
+      } else if (tx.transaction_type === "WITHDRAW_FROM_SAVINGS" || tx.transaction_type === "CLOSE_SAVINGS") {
+        fields = [
+          ["Mã số", tx.account_id ? `Sổ #${tx.account_id}` : "-"],
+          ["Khách hàng", tx.customer_name],
+          ["Ngày rút", tx.transaction_date || tx.created_at],
+          ["Số tiền rút", money(tx.amount)],
+          ["Loại tiết kiệm", productName],
+          ["Tiền lãi dự kiến", money(tx.interest_amount)],
+          ["Tổng tiền trả", money(Number(tx.amount || 0) + Number(tx.interest_amount || 0))],
+          ["Trạng thái", tx.status],
+        ];
+        note = tx.transaction_type === "CLOSE_SAVINGS"
+          ? "BM3 tất toán sẽ đóng sổ và cộng toàn bộ gốc + lãi về ví khách hàng."
+          : "BM3 rút một phần chỉ áp dụng cho sổ không kỳ hạn, số tiền rút không vượt quá số dư sổ.";
+      } else {
+        fields = [
+          ["Mã giao dịch", tx.transaction_id ? `#${tx.transaction_id}` : "-"],
+          ["Khách hàng", tx.customer_name],
+          ["Loại giao dịch", typeMap[tx.transaction_type] || tx.transaction_type],
+          ["Số tiền", money(tx.amount)],
+          ["Ngày tạo", tx.created_at],
+          ["Trạng thái", tx.status],
+        ];
+      }
+
+      return `
+        <div class="business-form">
+          <div class="business-form-head">
+            <strong>${escapeHtml(meta.code)}: ${escapeHtml(meta.title)}</strong>
+            <span>${escapeHtml(typeMap[tx.transaction_type] || tx.transaction_type)}</span>
+          </div>
+          <div class="business-grid">
+            ${fields.map(([label, value]) => businessField(label, value)).join("")}
+          </div>
+          <div class="business-note">${escapeHtml(note)}</div>
+        </div>
+      `;
     }
 
     async function api(path, options = {}) {
@@ -553,14 +685,34 @@
       `;
     }
 
+    async function openTransactionActionModal(id, action) {
+      state.pendingAction = { id, action };
+      el.confirmModalText.textContent = "Đang tải chi tiết phiếu nghiệp vụ...";
+      el.businessFormBody.innerHTML = "";
+      el.submitConfirmBtn.disabled = true;
+      el.submitConfirmBtn.textContent = action === "approve" ? "Duyệt phiếu" : "Từ chối phiếu";
+      el.confirmModal.classList.remove("hidden");
+
+      try {
+        const res = await api(`/api/transactions/${id}`);
+        const tx = res.transaction;
+        state.pendingAction = { id, action, transaction: tx };
+        el.confirmModalText.textContent = `${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch #${id}. Vui lòng kiểm tra biểu mẫu trước khi xác nhận.`;
+        el.businessFormBody.innerHTML = renderBusinessForm(tx);
+      } catch (error) {
+        el.confirmModalText.textContent = `${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch #${id}. Không tải được chi tiết phiếu: ${error.message}`;
+        el.businessFormBody.innerHTML = "";
+      } finally {
+        el.submitConfirmBtn.disabled = false;
+      }
+    }
+
     function bindTransactionActions(root) {
       root.querySelectorAll("button[data-action]").forEach((btn) => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           const id = btn.dataset.id;
           const action = btn.dataset.action;
-          state.pendingAction = { id, action };
-          el.confirmModalText.textContent = `${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch #${id}. Hệ thống sẽ cập nhật ví/sổ nếu giao dịch được duyệt.`;
-          el.confirmModal.classList.remove("hidden");
+          await openTransactionActionModal(id, action);
         });
       });
     }
@@ -735,6 +887,8 @@
     });
     el.cancelConfirmBtn.addEventListener("click", () => {
       state.pendingAction = null;
+      el.businessFormBody.innerHTML = "";
+      el.submitConfirmBtn.disabled = false;
       el.confirmModal.classList.add("hidden");
     });
     el.submitConfirmBtn.addEventListener("click", async () => {
@@ -748,6 +902,7 @@
         });
         showToast(`${action === "approve" ? "Duyệt" : "Từ chối"} giao dịch thành công.`);
         state.pendingAction = null;
+        el.businessFormBody.innerHTML = "";
         el.confirmModal.classList.add("hidden");
         await loadAll();
       } catch (error) {

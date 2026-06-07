@@ -221,8 +221,8 @@ def ensure_default_savings_products():
 
     default_products = [
         ("Không kỳ hạn", 0, 0.50, 15, "Rút linh hoạt sau thời gian giữ tối thiểu."),
-        ("Tiết kiệm 3 tháng", 3, 5.00, 0, "Kỳ hạn 3 tháng (demo: 3 phút)."),
-        ("Tiết kiệm 6 tháng", 6, 5.50, 0, "Kỳ hạn 6 tháng (demo: 6 phút)."),
+        ("3 tháng kỳ hạn", 3, 4.50, 0, "Gói tiết kiệm kỳ hạn 3 tháng."),
+        ("6 tháng kỳ hạn", 6, 5.20, 0, "Gói tiết kiệm kỳ hạn 6 tháng."),
     ]
 
     db_cursor.executemany(

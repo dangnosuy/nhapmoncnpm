@@ -19,13 +19,10 @@ db = mysql.connector.connect(
 )
 cursor = db.cursor()
 
-# Product IDs (from existing DB)
+# Product IDs (from existing DB): only 3 active products are used.
 PRODUCT_KKH = 10  # Không kỳ hạn 0.5%
 PRODUCT_3M  = 11  # 3 tháng 4.5%
 PRODUCT_6M  = 12  # 6 tháng 5.2%
-PRODUCT_9M  = 13  # 9 tháng 5.5%
-PRODUCT_12M = 14  # 12 tháng 6.0%
-PRODUCT_24M = 15  # 24 tháng 6.5%
 
 STAFF_ID = 2
 
@@ -135,8 +132,8 @@ opening_schedule = {
     "2026-05": 2,
 }
 
-product_choices = [PRODUCT_KKH, PRODUCT_3M, PRODUCT_6M, PRODUCT_9M, PRODUCT_12M, PRODUCT_24M]
-product_weights = [0.15, 0.15, 0.20, 0.10, 0.25, 0.15]  # 12M most popular
+product_choices = [PRODUCT_KKH, PRODUCT_3M, PRODUCT_6M]
+product_weights = [0.25, 0.35, 0.40]
 
 acct_idx = 0
 for month_key, count in opening_schedule.items():
@@ -149,9 +146,6 @@ for month_key, count in opening_schedule.items():
             PRODUCT_KKH: 5_000_000,
             PRODUCT_3M: 10_000_000,
             PRODUCT_6M: 20_000_000,
-            PRODUCT_9M: 25_000_000,
-            PRODUCT_12M: 50_000_000,
-            PRODUCT_24M: 80_000_000,
         }
         bal = rand_amount(base_amounts[pid], 0.5)
         bal = max(bal, 1_000_000)
@@ -162,12 +156,12 @@ for month_key, count in opening_schedule.items():
 closed_accounts = [
     (37, PRODUCT_6M, 0, "2025-01-10", "CLOSED"),
     (39, PRODUCT_3M, 0, "2025-02-20", "CLOSED"),
-    (43, PRODUCT_12M, 0, "2025-03-01", "CLOSED"),
+    (43, PRODUCT_6M, 0, "2025-03-01", "CLOSED"),
     (47, PRODUCT_6M, 0, "2025-06-15", "CLOSED"),
     (51, PRODUCT_3M, 0, "2025-08-01", "CLOSED"),
     (36, PRODUCT_3M, 0, "2025-10-10", "CLOSED"),
     (40, PRODUCT_6M, 0, "2025-12-01", "CLOSED"),
-    (45, PRODUCT_12M, 0, "2026-01-15", "CLOSED"),
+    (45, PRODUCT_6M, 0, "2026-01-15", "CLOSED"),
 ]
 accounts_to_create.extend(closed_accounts)
 
@@ -324,7 +318,7 @@ now = datetime.now()
 pending = [
     (36, None, None, 30_000_000, "DEPOSIT_TO_WALLET", "PENDING", 0, None, now - timedelta(hours=2)),
     (38, None, None, 10_000_000, "DEPOSIT_TO_SAVINGS", "PENDING", 0, None, now - timedelta(hours=1)),
-    (40, None, PRODUCT_12M, 50_000_000, "OPEN_SAVINGS", "PENDING", 0, None, now - timedelta(minutes=45)),
+    (40, None, PRODUCT_6M, 50_000_000, "OPEN_SAVINGS", "PENDING", 0, None, now - timedelta(minutes=45)),
     (42, None, None, 20_000_000, "WITHDRAW_FROM_SAVINGS", "PENDING", 0, None, now - timedelta(minutes=30)),
     (45, None, None, 30_000_000, "CLOSE_SAVINGS", "PENDING", 0, None, now - timedelta(minutes=15)),
     (50, None, None, 5_000_000, "WITHDRAW_FROM_WALLET", "PENDING", 0, None, now - timedelta(minutes=10)),

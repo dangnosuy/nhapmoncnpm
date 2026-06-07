@@ -1,9 +1,14 @@
 # Virtual environments
 venv/
 .venv/
+
 # Python caches
 __pycache__/
 *.py[cod]
 
+# Test output
+frontend/test-results/
+
 # Agent metadata
 .agent/
+.claude/

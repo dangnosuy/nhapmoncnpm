@@ -41,10 +41,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Key Design Decisions
 
 - **Multi-entry Vite build**: Three separate HTML entry points (`index.html`, `client/index.html`, `staff/index.html`). The Vite dev server proxies `/api` to `http://localhost:5000` and redirects `/client` → `/client/`, `/staff` → `/staff/`.
+- **Client/staff SPAs are standalone single-file apps**: `frontend/client/index.html` and `frontend/staff/index.html` contain all their JavaScript inline (not Vite-managed React modules). Do not edit them expecting Vite to rebuild them — they are self-contained. The admin SPA under `frontend/src/` is the only React/Vite-managed app.
 - **Role-based routing**: `App.jsx` uses `ProtectedRoute` (admin SPA) and `ExternalRoleRoute` (redirects to client/staff SPAs via `window.location.replace`).
 - **Schema auto-migration**: `app.py` runs `ensure_*_schema()` functions at startup to add missing columns (`account_number`, `address`, `transaction_type`, `interest_amount`).
 - **Default accounts**: Admin (`admin@gmail.com` / `admin123`) and Staff (`staff@gmail.com` / `staff123`) are auto-created. Overridable via env vars.
 - **Maker/Checker pattern**: Transactions go through `PENDING → APPROVED/REJECTED` workflow. Staff processes, customers initiate.
+- **SSE real-time events**: `backend/common/events.py` exposes `/api/events` as a Server-Sent Events stream. Call `publish_event(type, message, roles, user_ids)` from any route handler to push live notifications to connected clients.
+- **Thread-local DB proxies**: `db_conn` and `db_cursor` in `common/db.py` are thread-local proxies — import them directly at the top of each module that needs them. Never pass them as function arguments between modules or store them outside `common/`.
+- **New customer welcome bonus**: Registration auto-credits 10,000,000 VND to the new `CUSTOMER`'s `wallet_balance`.
 
 ## Commands
 
@@ -56,13 +60,18 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Initialize database
+# Initialize database (creates modern_savings_db with user smart_savings)
 mysql -u root -p < smart_savings.sql
+# Default DB credentials: user=smart_savings, password=SmartSavings@2026!, db=modern_savings_db
+# Override via env vars: DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 
 # Run server (from repo root)
 cd backend && python app.py
 # → http://localhost:5000
 # Smoke test: GET /api/ping
+
+# Seed analytics mock data (Jan 2025–May 2026) — optional, for analytics charts
+python seed_mock_data.py
 ```
 
 ### Frontend
@@ -78,8 +87,10 @@ npm run lint       # ESLint
 ### Testing
 
 ```bash
-# E2E (Playwright)
+# E2E (Playwright) — requires BOTH backend (port 5000) and frontend dev server (port 5173) running
 cd frontend && npx playwright test
+npx playwright test tests/role-flow.spec.js          # run one file
+npx playwright test --grep "customer"                # run matching tests
 
 # Python integration test
 python test_flow.py
@@ -126,6 +137,5 @@ See `docs/AGENTS.md` for additional repository guidelines (commit style, PR guid
 ## Notes
 
 - No `.cursorrules`, `.cursor/`, or `.github/copilot-instructions.md` files exist
-- The `frontend/client/index.html` (89.6K) and `frontend/staff/index.html` (29.8K) appear to be standalone built files or separate apps — check before modifying
 - `backend_output.log` contains server output from a previous run
 - Git remote: `https://github.com/dangnosuy/nhapmoncnpm.git` (origin/main)

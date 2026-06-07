@@ -100,6 +100,75 @@ def get_all_transactions():
         return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
 
 
+@transactions_bp.route('/api/transactions/<int:transaction_id>', methods=['GET'])
+@require_role(['STAFF'])
+def get_transaction_detail(transaction_id):
+    """Lấy chi tiết phiếu nghiệp vụ BM1/BM2/BM3 để Staff kiểm tra trước khi duyệt."""
+    try:
+        db_cursor.execute(
+            """
+            SELECT
+                t.transaction_id,
+                t.user_id,
+                u.full_name,
+                u.identity_card,
+                u.address,
+                t.account_id,
+                t.target_product_id,
+                COALESCE(target_p.name, p.name) AS product_name,
+                COALESCE(target_p.term_months, p.term_months) AS term_months,
+                COALESCE(target_p.interest_rate, p.interest_rate) AS interest_rate,
+                t.amount,
+                t.transaction_type,
+                t.status,
+                t.interest_amount,
+                t.created_at,
+                s.opened_at AS account_opened_at,
+                s.status AS account_status
+            FROM transactions t
+            JOIN users u ON t.user_id = u.user_id
+            LEFT JOIN savings_accounts s ON t.account_id = s.account_id
+            LEFT JOIN savings_products p ON s.product_id = p.product_id
+            LEFT JOIN savings_products target_p ON t.target_product_id = target_p.product_id
+            WHERE t.transaction_id = %s
+              AND t.transaction_type NOT IN ('DEPOSIT_TO_WALLET', 'WITHDRAW_FROM_WALLET')
+            """,
+            (transaction_id,)
+        )
+        row = db_cursor.fetchone()
+        if not row:
+            return jsonify({'message': 'Không tìm thấy giao dịch!'}), 404
+
+        created_at = row[14]
+        opened_at = row[15]
+        term_months = row[8]
+        detail = {
+            'transaction_id': row[0],
+            'user_id': row[1],
+            'customer_name': row[2],
+            'identity_card': row[3] or '',
+            'address': row[4] or '',
+            'account_id': row[5],
+            'target_product_id': row[6],
+            'product_name': _product_display_name(row[7]),
+            'term_months': term_months,
+            'interest_rate': float(row[9] or 0),
+            'amount': float(row[10]),
+            'transaction_type': row[11],
+            'status': row[12],
+            'interest_amount': float(row[13] or 0),
+            'created_at': str(created_at),
+            'transaction_date': created_at.strftime('%Y-%m-%d') if hasattr(created_at, 'strftime') else str(created_at).split(' ')[0],
+            'account_opened_at': str(opened_at) if opened_at else None,
+            'account_status': row[16],
+            'demo_maturity_date': demo_maturity_date(opened_at, term_months) if opened_at else None,
+            'demo_elapsed': demo_elapsed_display(opened_at) if opened_at else None,
+        }
+        return jsonify({'message': 'Chi tiết phiếu giao dịch', 'transaction': detail}), 200
+    except Exception as e:
+        return jsonify({'message': 'Lỗi server!', 'error': str(e)}), 500
+
+
 @transactions_bp.route('/api/transactions/<int:transaction_id>/approve', methods=['PUT'])
 @require_role(['STAFF'])
 def approve_transaction(transaction_id):
